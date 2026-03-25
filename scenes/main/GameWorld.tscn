@@ -1,0 +1,104 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/player/SugarGlider.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/environment/ScrollingManager.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/environment/TerrainGenerator.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/environment/ObstacleManager.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/hazards/RocketManager.gd" id="5"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
+size = Vector2(1920, 100)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_2"]
+size = Vector2(1920, 100)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_3"]
+size = Vector2(100, 1080)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_4"]
+size = Vector2(100, 1080)
+
+[node name="GameWorld" type="Node2D"]
+groups = ["game_world"]
+
+[node name="Background" type="ParallaxBackground" parent="."]
+
+[node name="DistantMountains" type="ParallaxLayer" parent="Background"]
+motion_scale = Vector2(0.1, 0.1)
+
+[node name="ColorRect" type="ColorRect" parent="Background/DistantMountains"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1920.0
+offset_bottom = 1080.0
+color = Color(0.4, 0.2, 0.1, 1)
+
+[node name="MiddleVolcanoes" type="ParallaxLayer" parent="Background"]
+motion_scale = Vector2(0.3, 0.3)
+
+[node name="ColorRect" type="ColorRect" parent="Background/MiddleVolcanoes"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1920.0
+offset_bottom = 1080.0
+color = Color(0.6, 0.3, 0.15, 1)
+
+[node name="ForegroundSpires" type="ParallaxLayer" parent="Background"]
+motion_scale = Vector2(0.6, 0.6)
+
+[node name="ColorRect" type="ColorRect" parent="Background/ForegroundSpires"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1920.0
+offset_bottom = 1080.0
+color = Color(0.8, 0.4, 0.2, 1)
+
+[node name="PlayArea" type="Node2D" parent="."]
+
+[node name="SugarGlider" parent="PlayArea" instance=ExtResource("1")]
+position = Vector2(200, 400)
+groups = ["player"]
+
+[node name="TerrainContainer" type="Node2D" parent="PlayArea"]
+groups = ["terrain_container"]
+
+[node name="HazardContainer" type="Node2D" parent="PlayArea"]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(960, 540)
+enabled = true
+
+[node name="ScrollingManager" type="Node" parent="."]
+script = ExtResource("2")
+
+[node name="TerrainGenerator" type="Node" parent="ScrollingManager"]
+script = ExtResource("3")
+
+[node name="ObstacleManager" type="Node" parent="ScrollingManager"]
+script = ExtResource("4")
+
+[node name="RocketManager" type="Node" parent="ScrollingManager"]
+script = ExtResource("5")
+
+[node name="WorldBounds" type="StaticBody2D" parent="."]
+collision_layer = 16
+collision_mask = 0
+
+[node name="TopBound" type="CollisionShape2D" parent="WorldBounds"]
+position = Vector2(960, -50)
+shape = SubResource("RectangleShape2D_1")
+
+[node name="BottomBound" type="CollisionShape2D" parent="WorldBounds"]
+position = Vector2(960, 1130)
+shape = SubResource("RectangleShape2D_2")
+
+[node name="LeftBound" type="CollisionShape2D" parent="WorldBounds"]
+position = Vector2(-50, 540)
+shape = SubResource("RectangleShape2D_3")
+
+[node name="RightBound" type="CollisionShape2D" parent="WorldBounds"]
+position = Vector2(1970, 540)
+shape = SubResource("RectangleShape2D_4")

@@ -1,0 +1,39 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[resource]
+animations = [{
+"frames": [],
+"loop": true,
+"name": &"idle_glide",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"turn_left",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"turn_right",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"diving",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"climbing",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": true,
+"name": &"low_energy",
+"speed": 5.0
+}, {
+"frames": [],
+"loop": false,
+"name": &"stunned",
+"speed": 5.0
+}]

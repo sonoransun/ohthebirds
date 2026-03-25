@@ -1,0 +1,16 @@
+<svg width="64" height="32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Body -->
+  <ellipse cx="32" cy="16" rx="24" ry="8" fill="#8B4513" stroke="#654321" stroke-width="1"/>
+
+  <!-- Head -->
+  <circle cx="48" cy="14" r="8" fill="#A0522D" stroke="#654321" stroke-width="1"/>
+
+  <!-- Gliding membrane -->
+  <path d="M8 16 Q2 8 8 8 Q20 12 32 12 Q44 12 56 8 Q62 8 56 16 Q44 20 32 20 Q20 20 8 16" fill="#DEB887" stroke="#8B7355" stroke-width="1" opacity="0.8"/>
+
+  <!-- Eye -->
+  <circle cx="52" cy="12" r="2" fill="black"/>
+
+  <!-- Tail -->
+  <ellipse cx="12" cy="18" rx="8" ry="4" fill="#654321" stroke="#4A2C17" stroke-width="1"/>
+</svg>
