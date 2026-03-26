@@ -352,7 +352,8 @@ func get_safe_altitude_range() -> Vector2:
 	var min_safe = 200.0
 	var max_safe = 800.0
 
-	for obstacle in upcoming_obstacles[:3]:  # Check next 3 obstacles
+	var obstacles_to_check = upcoming_obstacles.slice(0, min(3, upcoming_obstacles.size()))
+	for obstacle in obstacles_to_check:
 		if obstacle.has_method("get_safe_passage_points"):
 			var safe_points = obstacle.get_safe_passage_points()
 			for point in safe_points:

@@ -21,7 +21,7 @@ var ambient_enabled: bool = true
 # Current audio state
 var current_music_track: String = ""
 var is_music_playing: bool = false
-var music_fade_tween: Tween
+# music_fade_tween removed - using create_tween() instead
 
 # Audio resource cache
 var music_tracks: Dictionary = {}
@@ -63,9 +63,7 @@ func setup_audio_players():
 	ambient_player.stream = null
 	add_child(ambient_player)
 
-	# Create tween for smooth audio transitions
-	music_fade_tween = Tween.new()
-	add_child(music_fade_tween)
+	# Using create_tween() for smooth audio transitions (Godot 4.x)
 
 func setup_audio_buses():
 	"""Set up audio bus configuration"""

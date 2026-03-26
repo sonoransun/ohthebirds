@@ -124,31 +124,6 @@ func _on_input_active_changed(active: bool):
 	"""Handle input active state changes from InputManager"""
 	is_input_active = active
 
-func update_energy(delta):
-	"""Update energy system"""
-	if is_input_active and not is_stunned:
-		# Drain energy during active control
-		var drain_multiplier = 1.0
-
-		# More energy drain for upward movement
-		if input_direction.y < 0:
-			drain_multiplier = 1.5
-
-		# Less drain for gliding with wind
-		if is_gliding():
-			drain_multiplier = 0.7
-
-		current_energy -= ENERGY_DRAIN_RATE * drain_multiplier * delta
-	else:
-		# Recover energy during passive gliding
-		var recovery_rate = ENERGY_REGEN_RATE * energy_recovery_multiplier
-		current_energy += recovery_rate * delta
-
-	# Clamp energy values
-	current_energy = clamp(current_energy, 0.0, MAX_ENERGY)
-
-	# Update UI
-	emit_signal("energy_changed", current_energy, MAX_ENERGY)
 
 func calculate_glide_physics(delta):
 	"""Calculate gliding physics and movement"""
@@ -188,20 +163,6 @@ func apply_free_fall_resistance(delta):
 	"""Apply air resistance during free fall"""
 	velocity *= AIR_RESISTANCE
 
-func apply_player_input(delta):
-	"""Apply player input to movement"""
-	var effective_input_force = input_force
-
-	# Reduce force when energy is low
-	if current_energy < LOW_ENERGY_THRESHOLD:
-		effective_input_force *= 0.5
-
-	# Apply input in desired direction
-	velocity += input_direction * effective_input_force * delta
-
-	# Limit maximum speeds
-	velocity.x = clamp(velocity.x, -MAX_GLIDE_SPEED, MAX_GLIDE_SPEED)
-	velocity.y = clamp(velocity.y, -400.0, MAX_FALL_SPEED)
 
 func apply_environmental_effects(delta):
 	"""Apply environmental effects like wind and thermals"""
@@ -261,10 +222,6 @@ func handle_obstacle_collision(collision: KinematicCollision2D, previous_velocit
 
 	print("Obstacle collision - Energy: ", current_energy)
 
-func handle_rocket_collision(rocket_body: Node):
-	"""Handle collision with rockets - game over"""
-	print("Rocket collision - Game Over!")
-	GameManager.end_game()
 
 func handle_boundary_collision(collision: KinematicCollision2D):
 	"""Handle collision with world boundaries"""

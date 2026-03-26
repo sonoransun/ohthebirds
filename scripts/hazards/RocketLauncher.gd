@@ -272,6 +272,7 @@ func update_targeting(delta):
 
 		LaunchPattern.SPRAY_PATTERN:
 			# Will be handled during launch
+			pass
 
 		LaunchPattern.AMBUSH:
 			if distance_to_player < detection_range:

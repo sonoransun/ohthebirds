@@ -7,7 +7,7 @@ signal game_action_triggered(action: String)
 
 # Input state
 var input_direction: Vector2 = Vector2.ZERO
-var is_input_active: bool = false
+var _is_input_active: bool = false
 var raw_input_direction: Vector2 = Vector2.ZERO
 
 # Input smoothing and filtering
@@ -157,15 +157,15 @@ func set_input_direction(new_direction: Vector2, active: bool):
 		new_direction = new_direction.normalized()
 
 	raw_input_direction = new_direction
-	var was_active = is_input_active
-	is_input_active = active
+	var was_active = _is_input_active
+	_is_input_active = active
 
 	# Emit signals if values changed
 	if raw_input_direction != input_direction:
 		emit_signal("input_direction_changed", raw_input_direction)
 
-	if was_active != is_input_active:
-		emit_signal("input_active_changed", is_input_active)
+	if was_active != _is_input_active:
+		emit_signal("input_active_changed", _is_input_active)
 
 func update_input_smoothing(delta):
 	"""Apply smoothing to input direction"""
@@ -184,7 +184,7 @@ func get_raw_input_direction() -> Vector2:
 
 func is_input_active() -> bool:
 	"""Check if input is currently active"""
-	return is_input_active
+	return _is_input_active
 
 func set_input_sensitivity(sensitivity: float):
 	"""Set input sensitivity"""
@@ -222,7 +222,7 @@ func get_debug_info() -> Dictionary:
 	return {
 		"input_direction": input_direction,
 		"raw_direction": raw_input_direction,
-		"is_active": is_input_active,
+		"is_active": _is_input_active,
 		"touch_active": touch_active,
 		"mouse_active": mouse_active,
 		"platform": "mobile" if is_mobile else "desktop"
