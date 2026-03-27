@@ -39,7 +39,7 @@ const LOW_ENERGY_THRESHOLD: float = 20.0
 # Input and control
 var input_direction: Vector2 = Vector2.ZERO
 var is_input_active: bool = false
-var input_force: float = 400.0
+var input_force: float = 450.0
 
 # Energy state
 var current_energy: float = MAX_ENERGY
@@ -62,6 +62,7 @@ var collision_shape: CollisionShape2D
 var particle_effects: Node2D
 var glide_trail: GPUParticles2D
 var collision_sparks: GPUParticles2D
+var glider_light: PointLight2D
 
 # Environmental effects
 var wind_effect: Vector2 = Vector2.ZERO
@@ -99,12 +100,24 @@ func setup_node_references():
 	if animated_sprite:
 		animated_sprite.play("idle_glide")
 
+	# Evasion glow light (off by default, enabled during evasion mode)
+	glider_light = PointLight2D.new()
+	glider_light.color = Color(0.6, 0.9, 1.0)
+	glider_light.energy = 0.0
+	glider_light.texture_scale = 1.5
+	glider_light.shadow_enabled = false
+	add_child(glider_light)
+
 	print("Node references set up - AnimatedSprite2D: ", animated_sprite != null)
 
 func _physics_process(delta):
 	if is_stunned:
 		handle_stun_state(delta)
 		return
+
+	# Poll smoothed input each frame instead of relying on signal cache
+	input_direction = InputManager.get_input_direction()
+	is_input_active = InputManager.is_input_active()
 
 	update_energy(delta)
 	update_rocket_evasion(delta)
@@ -414,6 +427,10 @@ func enter_evasion_mode():
 		var tween = create_tween()
 		tween.tween_property(animated_sprite, "modulate", Color.CYAN, 0.2)
 
+	if glider_light:
+		var light_tween = create_tween()
+		light_tween.tween_property(glider_light, "energy", 1.2, 0.2)
+
 	# Audio feedback
 	AudioManager.play_sfx("evasion_mode", 0.8)
 
@@ -427,6 +444,10 @@ func exit_evasion_mode():
 	if animated_sprite:
 		var tween = create_tween()
 		tween.tween_property(animated_sprite, "modulate", Color.WHITE, 0.5)
+
+	if glider_light:
+		var light_tween = create_tween()
+		light_tween.tween_property(glider_light, "energy", 0.0, 0.5)
 
 	print("Sugar glider exiting evasion mode")
 
@@ -451,7 +472,8 @@ func apply_player_input(delta):
 	var max_speed_x = MAX_GLIDE_SPEED * (evasion_speed_boost if evasion_mode else 1.0)
 	var max_speed_y = 400.0 * (evasion_speed_boost if evasion_mode else 1.0)
 
-	velocity.x = clamp(velocity.x, -max_speed_x, max_speed_x)
+	# Clamp x to [0, max] — left input decelerates but never reverses in this auto-scroller
+	velocity.x = clamp(velocity.x, 0, max_speed_x)
 	velocity.y = clamp(velocity.y, -max_speed_y, MAX_FALL_SPEED)
 
 func update_energy(delta):
@@ -472,7 +494,7 @@ func update_energy(delta):
 		if evasion_mode:
 			drain_multiplier *= evasion_energy_drain_multiplier
 
-		current_energy -= ENERGY_DRAIN_RATE * drain_multiplier * delta
+		current_energy -= ENERGY_DRAIN_RATE * drain_multiplier * delta * GameManager.get_energy_drain_multiplier()
 	else:
 		# Recover energy during passive gliding
 		var recovery_rate = ENERGY_REGEN_RATE * energy_recovery_multiplier

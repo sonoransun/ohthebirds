@@ -47,6 +47,9 @@ func _ready():
 	setup_challenge_patterns()
 	find_required_nodes()
 	setup_connections()
+	# Apply preset difficulty immediately on startup
+	base_difficulty = GameManager.get_rocket_base_difficulty()
+	current_difficulty = base_difficulty
 
 	print("RocketManager initialized")
 
@@ -149,6 +152,7 @@ func setup_connections():
 	# Connect to GameManager for distance tracking
 	GameManager.distance_updated.connect(_on_distance_updated)
 	GameManager.difficulty_changed.connect(_on_difficulty_changed)
+	GameManager.difficulty_preset_changed.connect(_on_difficulty_preset_changed)
 
 	# Connect to terrain generator for chunk events
 	if terrain_generator:
@@ -255,8 +259,9 @@ func configure_launcher_for_difficulty(launcher: RocketLauncher, difficulty: flo
 	# Reduce reload times
 	launcher.reload_time *= (2.0 - clamp(difficulty / 2.0, 0.0, 0.5))
 
-	# Reduce warning times for higher difficulty
+	# Reduce warning times for higher difficulty, then apply preset multiplier
 	launcher.warning_time *= (2.0 - clamp(difficulty / 3.0, 0.0, 0.7))
+	launcher.warning_time *= GameManager.get_warning_time_multiplier()
 
 	# Increase detection range
 	launcher.detection_range *= (1.0 + clamp(difficulty / 4.0, 0.0, 0.5))
@@ -408,8 +413,13 @@ func _on_distance_updated(distance: float):
 
 func _on_difficulty_changed(difficulty: float):
 	"""Handle difficulty changes from GameManager"""
-	# Additional difficulty scaling beyond GameManager
 	pass
+
+func _on_difficulty_preset_changed(preset: int):
+	"""Reset rocket base difficulty when player changes difficulty preset"""
+	base_difficulty = GameManager.get_rocket_base_difficulty()
+	current_difficulty = base_difficulty
+	print("RocketManager: preset changed, base_difficulty = ", base_difficulty)
 
 func _on_rocket_launched(rocket: Rocket, launcher: RocketLauncher):
 	"""Handle rocket launch events"""

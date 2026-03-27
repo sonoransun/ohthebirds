@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="130" viewBox="0 0 640 130">
+  <style>
+    /* Energy bar animates through 4 states: Full → Draining → Critical → Regen */
+    .bar-fill {
+      transform-box: fill-box;
+      transform-origin: left center;
+      animation: barScale 9s ease-in-out infinite,
+                 barColor 9s ease-in-out infinite;
+    }
+    @keyframes barScale {
+      0%,  4%  { transform: scaleX(1.00); }
+      22%      { transform: scaleX(0.55); }
+      26%      { transform: scaleX(0.55); }
+      48%      { transform: scaleX(0.17); }
+      52%      { transform: scaleX(0.17); }
+      74%      { transform: scaleX(0.72); }
+      78%      { transform: scaleX(0.72); }
+      96%,100% { transform: scaleX(1.00); }
+    }
+    @keyframes barColor {
+      0%,  4%  { fill: #4caf50; }
+      18%      { fill: #ff9800; }
+      30%      { fill: #f44336; }
+      48%,52%  { fill: #e53935; }
+      64%      { fill: #ff9800; }
+      74%      { fill: #4caf50; }
+      100%     { fill: #4caf50; }
+    }
+    /* Pulsing glow on critical state */
+    .bar-glow {
+      transform-box: fill-box;
+      transform-origin: left center;
+      animation: glowScale 9s ease-in-out infinite,
+                 glowOpacity 9s ease-in-out infinite;
+    }
+    @keyframes glowScale {
+      0%,40%   { transform: scaleX(0.17); }
+      48%,52%  { transform: scaleX(0.17); }
+      60%,100% { transform: scaleX(0); }
+    }
+    @keyframes glowOpacity {
+      0%,38%   { opacity: 0; }
+      44%      { opacity: 0.5; }
+      48%      { opacity: 0; }
+      50%      { opacity: 0.5; }
+      54%      { opacity: 0; }
+      60%,100% { opacity: 0; }
+    }
+    /* Phase labels fade in/out */
+    .label-full     { animation: showFull 9s infinite; }
+    .label-drain    { animation: showDrain 9s infinite; }
+    .label-critical { animation: showCritical 9s infinite; }
+    .label-regen    { animation: showRegen 9s infinite; }
+    @keyframes showFull     { 0%,5%{opacity:1} 15%,85%{opacity:0} 95%,100%{opacity:1} }
+    @keyframes showDrain    { 0%,13%{opacity:0} 20%,33%{opacity:1} 43%,100%{opacity:0} }
+    @keyframes showCritical { 0%,42%{opacity:0} 49%,58%{opacity:1} 66%,100%{opacity:0} }
+    @keyframes showRegen    { 0%,62%{opacity:0} 69%,80%{opacity:1} 90%,100%{opacity:0} }
+    /* Percentage counter */
+    .pct-full     { animation: pctFull 9s infinite; }
+    .pct-drain    { animation: pctDrain 9s infinite; }
+    .pct-critical { animation: pctCrit 9s infinite; }
+    .pct-regen    { animation: pctRegen 9s infinite; }
+    @keyframes pctFull     { 0%,5%{opacity:1} 15%,85%{opacity:0} 95%,100%{opacity:1} }
+    @keyframes pctDrain    { 0%,13%{opacity:0} 20%,33%{opacity:1} 43%,100%{opacity:0} }
+    @keyframes pctCrit     { 0%,42%{opacity:0} 49%,58%{opacity:1} 66%,100%{opacity:0} }
+    @keyframes pctRegen    { 0%,62%{opacity:0} 69%,80%{opacity:1} 90%,100%{opacity:0} }
+  </style>
+
+  <!-- Background -->
+  <rect width="640" height="130" fill="#0d1117" rx="8"/>
+  <rect width="638" height="128" x="1" y="1" fill="none" stroke="#30363d" stroke-width="1" rx="8"/>
+
+  <!-- Title -->
+  <text x="20" y="26" fill="#e6edf3" font-family="monospace,Courier New" font-size="13" font-weight="bold" letter-spacing="2">ENERGY SYSTEM</text>
+
+  <!-- Bar label -->
+  <text x="20" y="56" fill="#8b949e" font-family="monospace,Courier New" font-size="11">ENERGY</text>
+
+  <!-- Bar background track -->
+  <rect x="90" y="44" width="530" height="28" rx="5" fill="#21262d" stroke="#30363d" stroke-width="1"/>
+
+  <!-- Animated glow overlay (for critical pulse) -->
+  <rect class="bar-glow" x="90" y="44" width="530" height="28" rx="5" fill="#ff1744" opacity="0"/>
+
+  <!-- Animated fill bar -->
+  <rect class="bar-fill" x="90" y="44" width="530" height="28" rx="5" fill="#4caf50"/>
+
+  <!-- Percentage labels (right of bar) -->
+  <text class="pct-full"     x="630" y="63" fill="#4caf50" font-family="monospace,Courier New" font-size="12" text-anchor="end">100%</text>
+  <text class="pct-drain"    x="630" y="63" fill="#ff9800" font-family="monospace,Courier New" font-size="12" text-anchor="end" opacity="0">55%</text>
+  <text class="pct-critical" x="630" y="63" fill="#f44336" font-family="monospace,Courier New" font-size="12" text-anchor="end" opacity="0">18%</text>
+  <text class="pct-regen"    x="630" y="63" fill="#4caf50" font-family="monospace,Courier New" font-size="12" text-anchor="end" opacity="0">72%</text>
+
+  <!-- Phase status labels -->
+  <text class="label-full"     x="20" y="96" fill="#4caf50" font-family="monospace,Courier New" font-size="12">⬛ FULL — passive gliding regenerates energy at 8/sec</text>
+  <text class="label-drain"    x="20" y="96" fill="#ff9800" font-family="monospace,Courier New" font-size="12" opacity="0">▲ CLIMBING — active input drains energy at 22.5/sec (1.5× upward)</text>
+  <text class="label-critical" x="20" y="96" fill="#f44336" font-family="monospace,Courier New" font-size="12" opacity="0">⚠ LOW ENERGY — control force halved, release input to recover!</text>
+  <text class="label-regen"    x="20" y="96" fill="#4caf50" font-family="monospace,Courier New" font-size="12" opacity="0">✓ RECOVERING — passive glide rebuilding energy...</text>
+
+  <!-- Phase timeline ticks -->
+  <line x1="90"  y1="80" x2="90"  y2="88" stroke="#30363d" stroke-width="1"/>
+  <line x1="222" y1="80" x2="222" y2="88" stroke="#30363d" stroke-width="1"/>
+  <line x1="354" y1="80" x2="354" y2="88" stroke="#30363d" stroke-width="1"/>
+  <line x1="487" y1="80" x2="487" y2="88" stroke="#30363d" stroke-width="1"/>
+  <line x1="620" y1="80" x2="620" y2="88" stroke="#30363d" stroke-width="1"/>
+  <text x="90"  y="110" fill="#484f58" font-family="monospace,Courier New" font-size="9" text-anchor="middle">FULL</text>
+  <text x="222" y="110" fill="#484f58" font-family="monospace,Courier New" font-size="9" text-anchor="middle">DRAINING</text>
+  <text x="354" y="110" fill="#484f58" font-family="monospace,Courier New" font-size="9" text-anchor="middle">CRITICAL</text>
+  <text x="487" y="110" fill="#484f58" font-family="monospace,Courier New" font-size="9" text-anchor="middle">REGEN</text>
+  <text x="620" y="110" fill="#484f58" font-family="monospace,Courier New" font-size="9" text-anchor="middle">FULL</text>
+  <line x1="90" y1="84" x2="620" y2="84" stroke="#21262d" stroke-width="1"/>
+</svg>

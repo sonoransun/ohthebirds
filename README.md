@@ -1,550 +1,641 @@
-# Birds 🐦
+<p align="center">
+  <img src="assets/readme/flight_path.svg" alt="Sugar Glider Adventure — flight path animation" width="640">
+</p>
 
-An immersive bird flight simulation game built with Godot Engine, featuring realistic aerial mechanics, environmental challenges, and survival elements.
+<h1 align="center">Sugar Glider Adventure</h1>
 
-## 🎮 Game Overview
+<p align="center">
+  A 2D auto-scrolling survival game built with Godot 4.<br>
+  Guide a sugar glider through volcanic terrain, dodge rockets, manage energy, and survive as long as possible.
+</p>
 
-**Birds** is a physics-based flight simulation where players navigate the challenges of avian life through dynamic environments. Experience the freedom and perils of flight as you soar through diverse landscapes, adapt to changing weather patterns, and overcome natural obstacles.
+<p align="center">
+  <img src="https://img.shields.io/badge/Godot-4.x-blue?logo=godotengine&logoColor=white" alt="Godot 4.x">
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platform">
+  <img src="https://img.shields.io/badge/Input-Keyboard%20%7C%20Mouse%20%7C%20Touch-green" alt="Input">
+  <img src="https://img.shields.io/badge/License-MIT-yellow" alt="License">
+</p>
 
-## 🌟 Core Themes
+---
 
-### 🌪️ **Freedom vs. Survival**
-Navigate the tension between the exhilarating freedom of flight and the constant need to survive in a dynamic ecosystem.
+## Quick Start
 
-### 🌍 **Environmental Adaptation**
-Adapt to changing seasons, weather patterns, and environmental hazards that affect flight mechanics and survival strategies.
+> Get playing in under 2 minutes on any platform.
 
-### 🏔️ **Journey and Migration**
-Experience epic migration journeys across varied terrains, each presenting unique challenges and opportunities.
+**Step 1** — Install [Godot Engine 4.x](https://godotengine.org/download/)
 
-### 🤝 **Flock Dynamics**
-Interact with other birds, form flocks for protection, and learn from collective behavior patterns.
-
-## 🎯 Core Challenges
-
-```mermaid
-mindmap
-  root((Core Challenges))
-    Flight Mechanics
-      Wind Resistance
-      Thermal Navigation
-      Energy Management
-      Landing Precision
-    Environmental Hazards
-      Storm Systems
-      Predator Avoidance
-      Obstacle Navigation
-      Territory Disputes
-    Resource Management
-      Food Scavenging
-      Rest Points
-      Energy Conservation
-      Seasonal Adaptation
-    Social Dynamics
-      Flock Formation
-      Communication
-      Hierarchy Navigation
-      Mate Selection
+**Step 2** — Get the game
+```bash
+git clone <repository-url>
+cd birds
 ```
 
-## 🎲 Game Mechanics Flow
+**Step 3** — Launch
+```bash
+godot --path . scenes/main/Main.tscn
+```
+Or open `project.godot` in the Godot editor and press **F5**.
 
-```mermaid
-graph TD
-    A[Game Start] --> B{Choose Bird Species}
-    B --> C[Tutorial Flight]
-    C --> D[World Exploration]
+---
 
-    D --> E{Environmental Event}
-    E -->|Weather Change| F[Adapt Flight Strategy]
-    E -->|Predator Threat| G[Evasion Mechanics]
-    E -->|Resource Opportunity| H[Foraging Challenge]
-    E -->|Social Encounter| I[Flock Interaction]
+## Table of Contents
 
-    F --> J[Physics Simulation]
-    G --> J
-    H --> K[Resource Collection]
-    I --> L[Social Dynamics]
+- [Installation](#installation)
+- [Controls](#controls)
+- [How to Play](#how-to-play)
+  - [The Core Loop](#the-core-loop)
+  - [Energy System](#energy-system)
+  - [Flight Physics](#flight-physics)
+  - [Obstacles](#obstacles)
+  - [Rockets & Hazards](#rockets--hazards)
+  - [Evasion Mode](#evasion-mode)
+- [Difficulty Settings](#difficulty-settings)
+- [HUD Reference](#hud-reference)
+- [Game Flow](#game-flow)
+- [Video Tutorials](#video-tutorials)
+- [Project Structure](#project-structure)
+- [Running Tests](#running-tests)
+- [Tips & Strategy](#tips--strategy)
+- [Troubleshooting](#troubleshooting)
 
-    J --> M{Energy Level Check}
-    K --> M
-    L --> M
+---
 
-    M -->|Low Energy| N[Find Rest/Food]
-    M -->|Adequate Energy| D
-    M -->|Exhausted| O[Game Over]
+## Installation
 
-    N --> P{Resource Found}
-    P -->|Success| D
-    P -->|Failure| O
+### Step 1 — Install Godot Engine 4.x
 
-    O --> Q[Score Summary]
-    Q --> R[Restart/Menu]
+<details>
+<summary>🍎 macOS</summary>
+
+**Option A — Homebrew (recommended)**
+```bash
+brew install godot
 ```
 
-## 🌊 Flight Physics System
-
-```mermaid
-graph LR
-    A[Player Input] --> B[Force Calculation]
-    B --> C{Wind Conditions}
-    C -->|Headwind| D[Increased Drag]
-    C -->|Tailwind| E[Boost Effect]
-    C -->|Crosswind| F[Drift Compensation]
-    C -->|Thermal| G[Lift Bonus]
-
-    D --> H[Physics Engine]
-    E --> H
-    F --> H
-    G --> H
-
-    H --> I[Position Update]
-    I --> J[Animation System]
-    I --> K[Energy Consumption]
-    I --> L[Collision Detection]
-
-    K --> M{Energy Status}
-    M -->|Critical| N[Emergency Landing]
-    M -->|Low| O[Seek Resources]
-    M -->|Normal| P[Continue Flight]
-```
-
-## 🏞️ Environmental Systems
-
-### Dynamic Weather Patterns
-
-```mermaid
-sequenceDiagram
-    participant P as Player Bird
-    participant W as Weather System
-    participant E as Environment
-    participant G as Game State
-
-    W->>E: Generate Weather Event
-    E->>E: Update Environmental Conditions
-    E->>P: Apply Weather Effects
-    P->>G: Adapt Flight Behavior
-    G->>W: Update Weather Intensity
-
-    Note over W,G: Weather affects visibility,<br/>wind patterns, and energy costs
-
-    W->>E: Storm Intensity Increase
-    E->>P: Reduce Visibility & Control
-    P->>G: Emergency Behaviors
-    G->>E: Seek Shelter Locations
-```
-
-### Ecosystem Interactions
-
-```mermaid
-graph TB
-    subgraph "Sky Layer"
-        A[Player Bird]
-        B[Predator Birds]
-        C[Flock Birds]
-    end
-
-    subgraph "Environmental Layer"
-        D[Wind Currents]
-        E[Weather Systems]
-        F[Terrain Features]
-    end
-
-    subgraph "Resource Layer"
-        G[Food Sources]
-        H[Nesting Sites]
-        I[Water Bodies]
-    end
-
-    A -.->|Hunted by| B
-    A -->|Joins| C
-    A -->|Affected by| D
-    A -->|Challenged by| E
-    A -->|Navigates| F
-    A -->|Seeks| G
-    A -->|Uses| H
-    A -->|Drinks from| I
-
-    B -->|Patrol| F
-    C -->|Follow| D
-    E -->|Modifies| D
-```
-
-## 🎪 Challenge Categories
-
-### 🌪️ **Weather Challenges**
-- **Thunderstorms**: Navigate through limited visibility and turbulent winds
-- **Fog Banks**: Rely on instinct and sound navigation when vision fails
-- **Blizzards**: Survive extreme cold while maintaining flight control
-- **Heat Thermals**: Master rising air currents for energy-efficient flight
-
-### 🦅 **Predator Encounters**
-- **Aerial Predators**: Outmaneuver hawks, eagles, and falcons through evasive flying
-- **Ground Threats**: Time landings carefully to avoid ground-based predators
-- **Camouflage**: Use environmental features to break line of sight
-
-### 🍃 **Navigation Puzzles**
-- **Migration Routes**: Follow ancient pathways through landmarks and magnetic fields
-- **Territory Boundaries**: Respect established bird territories or face confrontation
-- **Optimal Pathfinding**: Choose routes that balance distance, safety, and energy efficiency
-
-### 🏆 **Survival Mechanics**
-- **Energy Management**: Balance flight exertion with rest and feeding needs
-- **Seasonal Adaptation**: Adjust behavior for breeding, molting, and migration seasons
-- **Food Chain Awareness**: Understand your role in the ecosystem's complex relationships
-
-## 🎨 Visual Design Philosophy
-
-```mermaid
-graph LR
-    A[Natural Beauty] --> B[Realistic Physics]
-    B --> C[Immersive Experience]
-    C --> D[Educational Value]
-    D --> E[Conservation Awareness]
-
-    A -->|Stunning Landscapes| F[Player Engagement]
-    B -->|Accurate Flight| G[Skill Development]
-    C -->|Emotional Connection| H[Wildlife Appreciation]
-    D -->|Scientific Accuracy| I[Learning Outcomes]
-    E -->|Environmental Message| J[Social Impact]
-```
-
-## 🚀 Getting Started
-
-### System Requirements
-
-**Minimum Requirements:**
-- **OS**: Windows 10+, macOS 10.14+, or Linux (Ubuntu 18.04+ or equivalent)
-- **RAM**: 4GB minimum, 8GB recommended
-- **Storage**: 500MB for Godot Engine + 200MB for game
-- **Graphics**: OpenGL ES 3.0 / DirectX 11 compatible
-- **CPU**: Dual-core 2.0 GHz or equivalent
-
-**Recommended for Development:**
-- **RAM**: 16GB for comfortable development experience
-- **SSD**: For faster asset loading and compilation
-- **Dedicated Graphics**: For better performance testing
-
-### Installing Godot Engine
-
-#### 🪟 Windows Installation
-
-**Option 1: Official Download (Recommended)**
-1. Visit [godotengine.org/download](https://godotengine.org/download/)
-2. Download **Godot Engine 4.x** (Standard version)
-3. Extract the downloaded ZIP file to a folder (e.g., `C:\Godot\`)
-4. Add Godot to your system PATH:
-   - Right-click "This PC" → Properties → Advanced System Settings
-   - Click "Environment Variables"
-   - Under "System Variables", find "Path" and click "Edit"
-   - Add the Godot folder path (e.g., `C:\Godot\`)
-5. Verify installation: Open Command Prompt and type `godot --version`
-
-**Option 2: Chocolatey**
-```powershell
-# Install Chocolatey if not already installed
-Set-ExecutionPolicy Bypass -Scope Process -Force
-iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-
-# Install Godot
-choco install godot
-```
-
-**Option 3: Scoop**
-```powershell
-# Install Scoop if not already installed
-iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
-
-# Install Godot
-scoop bucket add extras
-scoop install godot
-```
-
-#### 🍎 macOS Installation
-
-**Option 1: Official Download (Recommended)**
-1. Visit [godotengine.org/download](https://godotengine.org/download/)
-2. Download **Godot Engine 4.x** for macOS
-3. Mount the DMG file and drag Godot to Applications folder
-4. **Important**: First launch may require allowing the app in System Preferences → Security & Privacy
+**Option B — Manual**
+1. Go to [godotengine.org/download](https://godotengine.org/download/)
+2. Download **Godot Engine 4.x** for macOS (choose ARM64 for Apple Silicon, x86_64 for Intel)
+3. Mount the `.dmg` and drag **Godot.app** to your Applications folder
+4. First launch: right-click → Open (to bypass Gatekeeper on first run)
 5. Add to PATH (optional):
    ```bash
    echo 'export PATH="/Applications/Godot.app/Contents/MacOS:$PATH"' >> ~/.zshrc
    source ~/.zshrc
    ```
-6. Verify installation: `godot --version`
 
-**Option 2: Homebrew**
-```bash
-# Install Homebrew if not already installed
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+</details>
 
-# Install Godot
-brew install godot
+<details>
+<summary>🪟 Windows</summary>
+
+**Option A — Scoop (recommended)**
+```powershell
+scoop bucket add extras
+scoop install godot
 ```
 
-**macOS-Specific Notes:**
-- On Apple Silicon Macs, ensure you download the ARM64 version for best performance
-- Gatekeeper may initially block the app - go to System Preferences → Security & Privacy to allow it
-- For development, you may need Xcode Command Line Tools: `xcode-select --install`
+**Option B — Chocolatey**
+```powershell
+choco install godot
+```
 
-#### 🐧 Linux Installation
+**Option C — Manual**
+1. Go to [godotengine.org/download](https://godotengine.org/download/)
+2. Download **Godot Engine 4.x** for Windows (64-bit)
+3. Extract the ZIP to a permanent location (e.g. `C:\Godot\`)
+4. Add the folder to your system PATH:
+   - Open **Start** → search "Environment Variables"
+   - Under **System Variables**, select **Path** → **Edit** → **New**
+   - Add the path to the Godot folder (e.g. `C:\Godot\`)
 
-**Ubuntu/Debian:**
+</details>
+
+<details>
+<summary>🐧 Linux</summary>
+
+**Ubuntu/Debian — Snap (recommended)**
 ```bash
-# Method 1: Snap (Recommended - always latest version)
 sudo snap install godot-4
-
-# Method 2: Flatpak
-sudo apt install flatpak
-flatpak install flathub org.godotengine.Godot
-
-# Method 3: AppImage (Manual)
-wget https://github.com/godotengine/godot/releases/download/4.x.x/Godot_v4.x.x-stable_linux.x86_64.zip
-unzip Godot_v4.x.x-stable_linux.x86_64.zip
-chmod +x Godot_v4.x.x-stable_linux.x86_64
-sudo mv Godot_v4.x.x-stable_linux.x86_64 /usr/local/bin/godot
 ```
 
-**Arch Linux:**
+**Flatpak**
 ```bash
-# AUR package
+flatpak install flathub org.godotengine.Godot
+```
+
+**Arch Linux**
+```bash
 yay -S godot
-
-# Or using pacman (may be older version)
-sudo pacman -S godot
+# or: sudo pacman -S godot
 ```
 
-**Fedora:**
+**Fedora**
 ```bash
-# DNF package
 sudo dnf install godot
-
-# Or Flatpak
-flatpak install flathub org.godotengine.Godot
 ```
 
-**Linux Dependencies:**
-Ensure you have required libraries:
+**Manual (AppImage)**
 ```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install libgl1-mesa-glx libxrandr2 libxss1 libgconf-2-4 libasound2
-
-# Fedora
-sudo dnf install mesa-libGL libXrandr libXScrnSaver GConf2 alsa-lib
-
-# Arch
-sudo pacman -S mesa libxrandr libxss gconf alsa-lib
+wget https://github.com/godotengine/godot/releases/latest/download/Godot_v4.x-stable_linux.x86_64.zip
+unzip Godot_v4.x-stable_linux.x86_64.zip
+chmod +x Godot_v4.x-stable_linux.x86_64
+sudo mv Godot_v4.x-stable_linux.x86_64 /usr/local/bin/godot
 ```
 
-### 🎮 How Godot Engine Works
+</details>
 
-Godot is a free, open-source game engine that uses a scene-tree architecture:
-
-#### **Core Concepts:**
-
-1. **Nodes and Scenes**: Everything in Godot is a node. Scenes are collections of nodes arranged in a tree structure
-2. **GDScript**: Python-like scripting language (also supports C# and C++)
-3. **Physics Engine**: Built-in 2D and 3D physics simulation
-4. **Rendering**: Modern Vulkan/OpenGL renderer with advanced lighting and effects
-5. **Platform Export**: Single codebase deploys to multiple platforms
-
-#### **For This Game:**
-- **Bird Physics**: Uses Godot's CharacterBody2D or RigidBody2D for realistic flight mechanics
-- **Weather System**: Particle systems and shaders create dynamic weather effects
-- **AI Flocks**: Uses Godot's built-in pathfinding and custom boid algorithms
-- **Audio**: 3D spatial audio for immersive environmental sounds
-- **Input**: Unified input system works across desktop, mobile, and gamepads
-
-### 📥 Setting Up the Project
-
-1. **Clone the Repository:**
-   ```bash
-   git clone <repository-url>
-   cd birds
-   ```
-
-2. **Open in Godot:**
-   - Launch Godot Engine
-   - Click "Import" in the Project Manager
-   - Navigate to the cloned `birds` folder
-   - Select `project.godot` and click "Import & Edit"
-
-3. **First Launch Setup:**
-   - Godot will automatically import all assets (this may take a few minutes)
-   - The editor will open showing the project structure
-   - Assets are processed and cached in the `.godot/` folder
-
-### 🎯 Running the Game
-
-#### **From Godot Editor:**
-1. Open the project in Godot
-2. Click the "Play" button (▶️) or press `F5`
-3. Select the main scene if prompted (usually `scenes/main/Main.tscn`)
-4. The game will launch in a new window
-
-#### **From Command Line:**
+**Verify installation:**
 ```bash
-# Run the game
-godot --path . --main-pack
-
-# Run a specific scene
-godot --path . scenes/main/Main.tscn
-
-# Run in debug mode with console output
-godot --path . --debug
+godot --version
+# Expected: 4.x.stable or similar
 ```
-
-#### **Exported Builds:**
-After exporting the game (see Platform Export section), you can run:
-- **Windows**: Double-click `birds.exe`
-- **macOS**: Open `birds.app` or run from Terminal
-- **Linux**: `./birds` or double-click the executable
-
-### 🎮 Game Controls
-
-**Desktop Controls:**
-- **Mouse**: Look around (if camera control is enabled)
-- **WASD** or **Arrow Keys**: Flight controls
-- **Spacebar**: Flap wings / Ascend
-- **Shift**: Dive / Descend
-- **Tab**: Toggle UI/HUD
-- **Esc**: Pause menu
-
-**Mobile Controls:**
-- **Touch**: Tap and drag for flight direction
-- **Double Tap**: Quick ascent
-- **Long Press**: Dive
-- **Pinch**: Zoom camera (if enabled)
-
-### 🔧 Development Setup
-
-**For Contributors and Modders:**
-
-1. **Install Version Control:**
-   ```bash
-   # Git is required for version control
-   git config --global user.name "Your Name"
-   git config --global user.email "your.email@example.com"
-   ```
-
-2. **Recommended Tools:**
-   - **VS Code** with Godot extension for external script editing
-   - **Aseprite** for pixel art assets
-   - **Audacity** for audio editing
-   - **Blender** for 3D models (if needed)
-
-3. **Project Structure Understanding:**
-   ```
-   birds/
-   ├── project.godot          # Main project file
-   ├── scenes/               # Game scenes (.tscn)
-   ├── scripts/             # GDScript files (.gd)
-   ├── assets/             # Art, audio, fonts
-   ├── resources/          # Godot resources (.tres)
-   └── .godot/            # Build cache (auto-generated)
-   ```
-
-### 🚨 Troubleshooting
-
-**Common Issues:**
-
-**"Project failed to load" Error:**
-- Ensure you're opening `project.godot`, not a folder
-- Check that Godot version is 4.x or compatible
-- Try reimporting: Project → Tools → Reimport
-
-**Performance Issues:**
-- Update graphics drivers
-- Lower graphics settings in project settings
-- Close other applications to free up RAM
-- Check system meets minimum requirements
-
-**Audio Not Working:**
-- Check system audio settings
-- Verify audio drivers are installed
-- Test with other applications
-- Try different audio output device
-
-**Controls Not Responding:**
-- Check input map in Project Settings → Input Map
-- Test with different input devices
-- Verify no other applications are intercepting input
-
-**Platform-Specific Issues:**
-
-**Windows:**
-- If antivirus blocks Godot: Add exception for Godot folder
-- For permission errors: Run Godot as administrator (temporarily)
-- DirectX issues: Update DirectX runtime
-
-**macOS:**
-- Gatekeeper blocking: System Preferences → Security & Privacy → Allow
-- Performance on older Macs: Try OpenGL renderer in project settings
-- Code signing issues: `codesign --force --deep --sign - /Applications/Godot.app`
-
-**Linux:**
-- Missing dependencies: Install packages listed in Linux Dependencies section
-- Audio issues: Check PulseAudio/ALSA configuration
-- Graphics problems: Update GPU drivers, try different desktop environment
-
-### 🔄 Keeping Updated
-
-**Update Godot Engine:**
-- Check [godotengine.org](https://godotengine.org) for latest releases
-- Backup your project before updating
-- Test thoroughly after updates
-- Read release notes for breaking changes
-
-**Update the Game:**
-```bash
-git pull origin main
-# Restart Godot to reload assets
-```
-
-Ready to take flight? Open Godot, load the project, and experience the freedom of the skies! 🦅
-
-## 🛠️ Technical Architecture
-
-```mermaid
-graph TD
-    A[Main Game Scene] --> B[Player Controller]
-    A --> C[Environment Manager]
-    A --> D[Weather System]
-    A --> E[AI Flock System]
-
-    B --> F[Physics Body]
-    B --> G[Input Handler]
-    B --> H[Animation Controller]
-
-    C --> I[Terrain Generator]
-    C --> J[Resource Spawner]
-    C --> K[Collision Manager]
-
-    D --> L[Wind Simulation]
-    D --> M[Weather Effects]
-    D --> N[Atmospheric Conditions]
-
-    E --> O[Boid Algorithm]
-    E --> P[Predator AI]
-    E --> Q[Social Behaviors]
-```
-
-## 🌍 Supported Platforms
-
-- **🖥️ Desktop**: Windows, macOS, Linux
-- **📱 Mobile**: Android, iOS
-- **🎮 Console**: Planned for future releases
 
 ---
 
-*Experience the world from a bird's eye view. Master the skies, survive the elements, and discover the true meaning of freedom in flight.*
+### Step 2 — Get the Game
 
-## 🤝 Contributing
+```bash
+git clone <repository-url>
+cd birds
+```
 
-We welcome contributions! Please see [CLAUDE.md](CLAUDE.md) for development guidelines and platform-specific build instructions.
+The project is self-contained. No additional assets, packages, or build steps required.
 
-## 📄 License
+---
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Step 3 — Launch
+
+**From the command line:**
+```bash
+# Run the game directly
+godot --path . scenes/main/Main.tscn
+
+# Or just open the project in the editor
+godot --path . --editor
+```
+
+**From the Godot Editor:**
+```
+File → Open Project → Navigate to the 'birds' folder → Select project.godot
+                     ↓
+        Editor opens showing project structure
+                     ↓
+        Press F5  (or click the ▶ Play button)
+                     ↓
+        Select difficulty → Game starts
+```
+
+**At startup you will see:**
+
+```
+┌─────────────────────────────────────┐
+│    SUGAR GLIDER ADVENTURE           │
+│                                     │
+│    Select Difficulty                │
+│                                     │
+│  [ EASY      0.75× score ]          │
+│  [ NORMAL    1.0×  score ]          │
+│  [ HARD      1.5×  score ]          │
+│  [ EXTREME   2.5×  score ]          │
+└─────────────────────────────────────┘
+```
+
+Click a difficulty to begin.
+
+---
+
+## Controls
+
+### Keyboard
+
+```
+  ┌─────────────────────────────────────────────────────┐
+  │  KEYBOARD CONTROLS                                   │
+  │                                                      │
+  │         ┌───┐                                        │
+  │         │ W │  ── ┐                                  │
+  │    ┌────┴───┴────┐ │                                 │
+  │    │  A   S   D  │ ├─ Also: Arrow Keys  ─── ┐       │
+  │    └─────────────┘ │      or Spacebar (↑)    │       │
+  │                    │                         │       │
+  │  W / ↑ / Space ────┤ Glide Up               │       │
+  │  S / ↓ ────────────┤ Glide Down             │       │
+  │  A / ← ────────────┤ Decelerate (slow down) │       │
+  │  D / → ────────────┤ Accelerate (speed up)  │       │
+  │                    │                         │       │
+  │  Esc ──────────────┘ Pause / Resume          │       │
+  │  R / Enter ──────────────────────────────────┘       │
+  │             Restart (shown on game over screen)      │
+  └─────────────────────────────────────────────────────┘
+```
+
+### Mouse (Desktop)
+
+Hold **left mouse button** and move the cursor — the glider aims toward your cursor position relative to the screen center. Release to stop steering.
+
+### Touch (Mobile)
+
+Tap the screen and **drag** to set flight direction. The drag must travel at least **30px** from the touch origin for directional input to engage. Release to return to neutral.
+
+---
+
+## How to Play
+
+### The Core Loop
+
+```
+  ① Select difficulty
+        ↓
+  ② Glider auto-flies right — you control vertical & slight horizontal
+        ↓
+  ③ Steer around obstacles (volcanoes, spires)
+        ↓
+  ④ Dodge rockets fired from ground launchers
+        ↓
+  ⑤ Manage energy — active input drains it, passive gliding restores it
+        ↓
+  ⑥ Navigate thermal updrafts for bonus energy recovery
+        ↓
+  ⑦ Survive as long as possible — score scales with difficulty
+```
+
+---
+
+### Energy System
+
+<p align="center">
+  <img src="assets/readme/energy_cycle.svg" alt="Energy cycle animation: Full → Draining → Critical → Recovering" width="640">
+</p>
+
+The energy bar is the central resource. Mismanage it and you lose control before a rocket ends you.
+
+| State | Condition | Effect |
+|-------|-----------|--------|
+| **Full** (green) | Energy > 20 | Normal flight, full control force |
+| **Draining** | Active directional input held | −15/sec base (×1.5 when climbing, ×0.7 when gliding fast) |
+| **Low Energy** (red, <20) | Energy ≤ 20 | Control force halved — very sluggish response |
+| **Passive Regen** | No input held | +8/sec (×1.5 in thermal updrafts) |
+
+**Key insight:** The energy bar is self-regulating. The correct play is to make short, targeted input bursts rather than holding a direction continuously.
+
+---
+
+### Flight Physics
+
+<p align="center">
+  <img src="assets/readme/flight_path.svg" alt="Animated flight path showing the optimal glide pattern" width="640">
+</p>
+
+The glider is always subject to gravity. **Horizontal speed generates lift** — the faster you're moving right, the less you sink.
+
+- Speed **≥ 100 px/s**: Lift is generated, glider holds altitude or climbs
+- Speed **< 100 px/s**: No lift — free fall begins
+- Maximum forward speed: **600 px/s**
+- Maximum fall speed: **800 px/s** (terminal velocity)
+
+> **Tip:** Let yourself descend through gaps (free energy) then use a short upward burst to clear the next obstacle. Fighting gravity constantly is the fastest way to drain your energy bar.
+
+---
+
+### Obstacles
+
+**Volcanoes** — Wide triangular formations rising from the ground. Active volcanoes have lava glow.
+
+```
+        *
+       /|\
+      / | \      ← Navigate over the top (if height < ~400px)
+     /  |  \        or around the sides
+    /   |   \
+───/────|────\───  ground
+```
+
+- Collision: **1-second stun** + **−25 energy** + velocity bounce
+- Navigation: over top, left side, or right side (hints tell you which)
+
+**Spires** — Narrower vertical formations in five variants:
+
+```
+  SINGLE    CLUSTER    ARCH       LEANING    CRYSTAL
+    |        |||       | |          /         ✦
+    |        |||       | |         /          |
+    |        |||       | |        /           |
+   ─┴─      ─┴┴┴─    ─┘ └─     ─┘          ─┴─
+  easy       wide    thread     avoid        max
+            bypass    gap       lean       clearance
+```
+
+**Navigation hints** appear on-screen when a challenging cluster is ahead, telling you whether to fly high, low, or thread a gap.
+
+---
+
+### Rockets & Hazards
+
+Ground-based launchers fire rockets toward the glider. **A direct hit ends the game.** There are 8 rocket types and 7 firing patterns.
+
+**Threat Level indicator (HUD):**
+```
+  🚀 THREAT  ░░░░░░░░░░░░  → GREEN  (0–3 rockets) — manageable
+  🚀 THREAT  ████░░░░░░░░  → ORANGE (3–6 rockets) — dangerous
+  🚀 THREAT  ████████████  → RED    (6+ rockets)  — EXTREME THREAT
+```
+
+**Challenge waves** trigger every ~30 seconds (30% chance per interval). Types include:
+- Synchronized barrage
+- Tracking swarm
+- Cluster bomb field
+- Smoke screen assault
+- Mega launcher event
+
+A screen flash and `INCOMING: [WAVE NAME]` warning appears before each wave. After the wave ends, `ALL CLEAR — SAFE PASSAGE` confirms the threat window is over.
+
+---
+
+### Evasion Mode
+
+When a rocket closes within **150px** while heading toward the glider, **evasion mode** activates automatically for **1.5 seconds**:
+
+```
+  Normal state:   glider ●────────────────────────
+  Rocket nearby:  glider ●  ←●── rocket approaching
+                         ↓
+  Evasion mode:   glider ◎  (cyan flash, +40% speed)
+                         ↓
+  Outcome:    ┌── Rocket misses → evasion ends normally
+              └── Direct hit   → 10% survival chance
+                                  (50 energy cost, 2s stun)
+```
+
+| Property | Evasion Mode Value |
+|----------|-------------------|
+| Movement force | ×1.4 |
+| Energy drain | ×2.0 |
+| Energy recovery | ×0.5 |
+| Hit survival chance | 10% |
+
+> The cyan glow is your only visual cue that evasion is active. Watch your energy — the doubled drain can empty the bar fast.
+
+---
+
+## Difficulty Settings
+
+<p align="center">
+  <img src="assets/readme/difficulty_scale.svg" alt="Difficulty preset comparison chart" width="640">
+</p>
+
+| Preset | Scroll Speed | Energy Drain | Warning Time | Rockets | Score Multiplier |
+|--------|:-----------:|:------------:|:------------:|:-------:|:----------------:|
+| **EASY** | 0.75× | 0.60× | 1.8× longer | 0.50× | 0.75× |
+| **NORMAL** | 1.00× | 1.00× | 1.0× | 1.00× | 1.00× |
+| **HARD** | 1.20× | 1.30× | 0.6× shorter | 1.50× | 1.50× |
+| **EXTREME** | 1.50× | 1.70× | 0.3× (almost none) | 2.00× | 2.50× |
+
+**Which preset should I choose?**
+- **EASY** — Learning the game, understanding energy management, or exploring mechanics without pressure
+- **NORMAL** — The intended experience balancing challenge and approachability
+- **HARD** — You know the energy system well and want to push for leaderboard scores
+- **EXTREME** — Rockets barely give warnings, energy drains fast, and the score reward is enormous — for experts only
+
+Difficulty selection appears on every start and after every game over. The selected preset is saved between sessions.
+
+---
+
+## HUD Reference
+
+```
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │ ⚡ ENERGY  ████████████████████░░░░░░░░░  72%       Score: 4,280     │
+  │ 🚀 THREAT  ████░░░░░░░░░░░░░░░░░░░░░░░░  LOW        Dist:  1,240m   │
+  │                                                                       │
+  │              ⚠  NARROW SPIRE CLUSTER AHEAD — FLY HIGH  ⚠             │
+  └──────────────────────────────────────────────────────────────────────┘
+```
+
+| Element | Position | Description |
+|---------|----------|-------------|
+| **Energy bar** | Top-left | Green → Yellow → Red as energy drops below 50% / 20% |
+| **Threat level bar** | Second row | Active rocket count: Green (low) / Orange / Red (extreme) |
+| **Score** | Top-right | Points from distance + bonuses, scaled by difficulty preset |
+| **Distance** | Right | Meters traveled — used for difficulty scaling |
+| **Navigation hint** | Center | Obstacle type and recommended path, fades after 3–4 seconds |
+| **Wave alert** | Center | Challenge wave name, flashes orange-red before appearing |
+| **Extreme Threat** | Center | Shown in red when 6+ rockets are active simultaneously |
+
+**Debug overlay** (press **F** during play): shows velocity vector, input direction magnitude, and current animation state — useful for understanding the physics.
+
+---
+
+## Game Flow
+
+```mermaid
+flowchart TD
+    A["🎮 Launch Game"] --> B["📋 Difficulty Menu\nEASY / NORMAL / HARD / EXTREME"]
+    B --> D["🦔 Flying\nauto-scroll right"]
+    D --> E{"Encounter"}
+    E -->|"Rocket direct hit"| F["💥 Game Over\n→ score tallied\n→ high score updated"]
+    E -->|"Obstacle collision"| G["😵 Stunned 1s\n–25 energy\nvelocity bounce"]
+    E -->|"Rocket within 150px"| H["⚡ Evasion Mode 1.5s\n+40% speed · 2× drain\n10% survival if hit"]
+    E -->|"Energy ≤ 20"| I["🔋 Low Energy\nhalf control force\nrelease input to recover"]
+    G --> D
+    H --> D
+    I --> D
+    F --> B
+```
+
+---
+
+## Video Tutorials
+
+Optional video walkthroughs for common tasks. Click to expand each section.
+
+<details>
+<summary>📹 Tutorial 1: Installation &amp; First Launch (~5 min)</summary>
+
+<p align="center">
+  <img src="assets/readme/tutorial_thumb_1.svg" alt="Tutorial 1: Installation and First Launch" width="320">
+</p>
+
+> 🎬 **Recording in progress.** Once available, the thumbnail above will link to the video.
+> In the meantime, the written [Installation](#installation) guide covers everything step-by-step.
+
+**This tutorial will cover:**
+- Installing Godot 4 on macOS, Windows, and Linux (all three shown)
+- Cloning the repository and opening `project.godot` in the editor
+- Navigating the Godot editor for the first time — what each panel does
+- Selecting a difficulty preset and starting your first game
+- Common first-launch errors and how to resolve them (Gatekeeper, PATH issues, etc.)
+
+**Written equivalent:** [Installation](#installation) → [Step 3 — Launch](#step-3--launch)
+
+</details>
+
+<details>
+<summary>📹 Tutorial 2: Understanding the Energy System &amp; Controls (~8 min)</summary>
+
+<p align="center">
+  <img src="assets/readme/tutorial_thumb_2.svg" alt="Tutorial 2: Energy System and Controls" width="320">
+</p>
+
+> 🎬 **Recording in progress.**
+> The [Energy System](#energy-system) and [Controls](#controls) sections explain this in text form.
+
+**This tutorial will cover:**
+- How the energy bar depletes and regenerates — live demonstration
+- The difference between holding input vs. short bursts (with score comparison)
+- How horizontal speed creates lift — why slowing down causes sinking
+- Mouse steering vs. keyboard — which is more precise and when to use each
+- Reading navigation hints — understanding "FLY HIGH" / "THREAD GAP" / "AVOID LEAN"
+- What "evasion mode" looks like visually and how to survive it
+
+**Written equivalent:** [Energy System](#energy-system) → [Flight Physics](#flight-physics) → [Controls](#controls)
+
+</details>
+
+<details>
+<summary>📹 Tutorial 3: Advanced Tactics &amp; High Score Runs (~10 min)</summary>
+
+<p align="center">
+  <img src="assets/readme/tutorial_thumb_3.svg" alt="Tutorial 3: Advanced Tactics and High Score Runs" width="320">
+</p>
+
+> 🎬 **Recording in progress.**
+> The [Tips & Strategy](#tips--strategy) section covers the key points in text form.
+
+**This tutorial will cover:**
+- The "descend and burst" rhythm — maximizing distance on minimum energy
+- Thermal updraft hunting — where they appear and how to route through them
+- Reading the rocket warning system — anticipating patterns before they fire
+- Surviving challenge waves — positioning during barrages
+- HARD vs. EXTREME difficulty comparison — when the score multiplier is worth it
+- High score run breakdown — decision by decision analysis
+
+**Written equivalent:** [Tips & Strategy](#tips--strategy) → [Difficulty Settings](#difficulty-settings)
+
+</details>
+
+---
+
+## Project Structure
+
+```
+birds/
+├── project.godot                    # Project config, input map, autoloads
+├── scenes/
+│   ├── main/
+│   │   ├── Main.tscn                # Root scene: UI + game world
+│   │   └── GameWorld.tscn           # Scrolling play area with parallax
+│   ├── player/
+│   │   └── SugarGlider.tscn         # Player character (CharacterBody2D)
+│   ├── environment/
+│   │   ├── VolcanoObstacle.tscn     # Volcano with lava glow
+│   │   └── SpireObstacle.tscn       # 5-variant rock/crystal spire
+│   └── hazards/
+│       ├── Rocket.tscn              # 8 rocket types
+│       └── RocketLauncher.tscn      # 8 launcher types, 7 patterns
+├── scripts/
+│   ├── autoload/
+│   │   ├── GameManager.gd           # State, score, difficulty presets, save/load
+│   │   ├── InputManager.gd          # Keyboard, mouse, touch (with smoothing)
+│   │   └── AudioManager.gd          # Audio bus management
+│   ├── player/
+│   │   └── SugarGlider.gd           # Flight physics, energy system, evasion
+│   ├── main/
+│   │   └── Main.gd                  # Difficulty UI, camera, WorldEnvironment
+│   ├── environment/
+│   │   ├── ScrollingManager.gd      # Parallax, speed scaling, thermal zones
+│   │   ├── ObstacleManager.gd       # Obstacle tracking, navigation hints
+│   │   ├── TerrainGenerator.gd      # Procedural + pattern-based generation
+│   │   ├── VolcanoObstacle.gd       # Volcano physics, lava PointLight2D
+│   │   └── SpireObstacle.gd         # Spire variants, crystal PointLight2D
+│   └── hazards/
+│       ├── Rocket.gd                # Projectile (tracking, cluster, spiral, etc.)
+│       ├── RocketLauncher.gd        # Warning system, salvo sequencing
+│       └── RocketManager.gd         # Challenge waves, difficulty escalation
+├── assets/
+│   ├── sprites/
+│   │   └── sugar_glider_placeholder.svg
+│   └── readme/                      # Diagrams embedded in this README
+│       ├── energy_cycle.svg
+│       ├── difficulty_scale.svg
+│       ├── flight_path.svg
+│       └── tutorial_thumb_1/2/3.svg
+├── resources/
+│   └── SugarGliderSprites.tres      # Animation frame definitions (placeholder)
+└── tests/                           # Automated test suite
+    ├── base/TestBase.gd
+    ├── unit/                        # GameManager, InputManager, SugarGlider, presets
+    ├── integration/                 # Physics fly-through scenarios
+    ├── examples/                    # Reference templates for new tests
+    ├── run_all_tests.gd
+    └── README.md
+```
+
+---
+
+## Running Tests
+
+The project includes a self-contained headless test suite with 39 tests covering game state, physics, energy, input, and difficulty presets.
+
+```bash
+# Run all tests (requires godot on PATH)
+./run_tests.sh
+
+# Or directly
+godot --path . --headless --script tests/run_all_tests.gd
+
+# Run a single suite
+godot --path . --headless --script tests/unit/test_game_manager.gd
+```
+
+Expected output:
+```
+═══════════════════════════════════════
+  ✓ ALL PASSED
+  39 passed, 0 failed, 39 total
+═══════════════════════════════════════
+```
+
+See [`tests/README.md`](tests/README.md) for full documentation on adding tests.
+
+---
+
+## Tips & Strategy
+
+**Energy management (most important skill)**
+- Never hold a direction continuously — use short bursts, then release and glide
+- When you see a gap below an obstacle, dive through it instead of climbing over (free altitude change)
+- Watch for the hint text — it knows what's ahead before you can see it
+
+**Thermals (free recovery)**
+- Thermal updrafts appear roughly every 800px, sized 150×200px
+- They provide 1.5× energy regen AND slight upward push
+- Routing through a thermal before a hard section can make the difference
+
+**Rocket survival tactics**
+- Rockets launch from ground level — gaining altitude early gives you more time to react
+- The warning light on a launcher flashes before it fires — learn to spot it in your peripheral vision
+- During HARD/EXTREME, warning times are shortened; position defensively by staying in the upper third of the screen
+- Evasion mode activates automatically — your job is to keep enough energy that the doubled drain doesn't immediately leave you helpless
+
+**Scoring optimization**
+- EXTREME difficulty awards 2.5× score per point — if you can survive for 500m on EXTREME, that beats 1,000m on NORMAL
+- Near-misses with rockets award bonus points (closer = more points)
+- Each obstacle successfully passed awards points scaled to obstacle type (Crystal Spire = 20 pts)
+- Challenge waves temporarily flood the screen with rockets but award significant near-miss bonuses if you survive
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| **"Project failed to load"** | Open `project.godot` (the file, not the folder) in Godot 4.x |
+| **Game window doesn't appear** | Run `godot --version` to verify Godot 4.x is installed |
+| **Controls not responding** | Check Project Settings → Input Map; ensure no other app intercepts keyboard |
+| **macOS: "app is damaged" error** | `xattr -cr /Applications/Godot.app` in Terminal |
+| **macOS: Gatekeeper blocks launch** | System Settings → Privacy & Security → Allow Godot |
+| **Poor performance / low FPS** | Project Settings → Rendering → Anti-Aliasing → set MSAA to Off or 2x |
+| **Slow on older hardware** | Project Settings → Rendering → Renderer → switch Forward+ to Compatibility |
+| **Black screen / no visuals** | Update GPU drivers; try `-rendering-driver opengl3` flag |
+| **Tests fail to run** | Ensure Godot is on PATH or set `GODOT_BIN=/path/to/godot ./run_tests.sh` |
+| **High score not saving** | Check write permissions for Godot's user data directory (`user://`) |

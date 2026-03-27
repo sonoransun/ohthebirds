@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="260" viewBox="0 0 640 260">
+  <!-- Background -->
+  <rect width="640" height="260" fill="#0d1117" rx="8"/>
+  <rect width="638" height="258" x="1" y="1" fill="none" stroke="#30363d" stroke-width="1" rx="8"/>
+
+  <!-- Title -->
+  <text x="20" y="28" fill="#e6edf3" font-family="monospace,Courier New" font-size="13" font-weight="bold" letter-spacing="2">DIFFICULTY PRESETS</text>
+
+  <!-- Column headers -->
+  <!-- EASY (#4caf50) -->
+  <rect x="108" y="36" width="112" height="24" rx="4" fill="#1b4332"/>
+  <text x="164" y="53" fill="#4caf50" font-family="monospace,Courier New" font-size="13" font-weight="bold" text-anchor="middle">EASY</text>
+
+  <!-- NORMAL (#9e9e9e) -->
+  <rect x="236" y="36" width="112" height="24" rx="4" fill="#1f2328"/>
+  <text x="292" y="53" fill="#c9d1d9" font-family="monospace,Courier New" font-size="13" font-weight="bold" text-anchor="middle">NORMAL</text>
+
+  <!-- HARD (#ff9800) -->
+  <rect x="364" y="36" width="112" height="24" rx="4" fill="#3d2012"/>
+  <text x="420" y="53" fill="#ff9800" font-family="monospace,Courier New" font-size="13" font-weight="bold" text-anchor="middle">HARD</text>
+
+  <!-- EXTREME (#f44336) -->
+  <rect x="492" y="36" width="112" height="24" rx="4" fill="#3d0c0c"/>
+  <text x="548" y="53" fill="#f44336" font-family="monospace,Courier New" font-size="13" font-weight="bold" text-anchor="middle">EXTREME</text>
+
+  <!-- Row labels -->
+  <text x="20" y="88"  fill="#8b949e" font-family="monospace,Courier New" font-size="11">Scroll</text>
+  <text x="20" y="93"  fill="#8b949e" font-family="monospace,Courier New" font-size="11">Speed</text>
+  <text x="20" y="148" fill="#8b949e" font-family="monospace,Courier New" font-size="11">Energy</text>
+  <text x="20" y="153" fill="#8b949e" font-family="monospace,Courier New" font-size="11">Drain</text>
+  <text x="20" y="208" fill="#8b949e" font-family="monospace,Courier New" font-size="11">Rocket</text>
+  <text x="20" y="213" fill="#8b949e" font-family="monospace,Courier New" font-size="11">Freq.</text>
+
+  <!-- Dividers -->
+  <line x1="100" y1="66" x2="612" y2="66" stroke="#21262d" stroke-width="1"/>
+  <line x1="100" y1="124" x2="612" y2="124" stroke="#21262d" stroke-width="1"/>
+  <line x1="100" y1="182" x2="612" y2="182" stroke="#21262d" stroke-width="1"/>
+
+  <!-- ===================== ROW 1: Scroll Speed ===================== -->
+  <!-- Bar max = 96px, values: EASY=50%=48, NORMAL=67%=64, HARD=80%=77, EXTREME=100%=96 -->
+  <!-- Track backgrounds -->
+  <rect x="110" y="74" width="96" height="16" rx="3" fill="#21262d"/>
+  <rect x="238" y="74" width="96" height="16" rx="3" fill="#21262d"/>
+  <rect x="366" y="74" width="96" height="16" rx="3" fill="#21262d"/>
+  <rect x="494" y="74" width="96" height="16" rx="3" fill="#21262d"/>
+  <!-- Fills -->
+  <rect x="110" y="74" width="48" height="16" rx="3" fill="#4caf50" opacity="0.85"/>
+  <rect x="238" y="74" width="64" height="16" rx="3" fill="#9e9e9e" opacity="0.85"/>
+  <rect x="366" y="74" width="77" height="16" rx="3" fill="#ff9800" opacity="0.85"/>
+  <rect x="494" y="74" width="96" height="16" rx="3" fill="#f44336" opacity="0.85"/>
+  <!-- Value labels -->
+  <text x="164" y="104" fill="#4caf50" font-family="monospace,Courier New" font-size="11" text-anchor="middle">0.75×</text>
+  <text x="292" y="104" fill="#c9d1d9" font-family="monospace,Courier New" font-size="11" text-anchor="middle">1.00×</text>
+  <text x="420" y="104" fill="#ff9800" font-family="monospace,Courier New" font-size="11" text-anchor="middle">1.20×</text>
+  <text x="548" y="104" fill="#f44336" font-family="monospace,Courier New" font-size="11" text-anchor="middle">1.50×</text>
+
+  <!-- ===================== ROW 2: Energy Drain ===================== -->
+  <!-- EASY=40%=38, NORMAL=67%=64, HARD=87%=83, EXTREME=100%=96 -->
+  <rect x="110" y="132" width="96" height="16" rx="3" fill="#21262d"/>
+  <rect x="238" y="132" width="96" height="16" rx="3" fill="#21262d"/>
+  <rect x="366" y="132" width="96" height="16" rx="3" fill="#21262d"/>
+  <rect x="494" y="132" width="96" height="16" rx="3" fill="#21262d"/>
+  <rect x="110" y="132" width="38" height="16" rx="3" fill="#4caf50" opacity="0.85"/>
+  <rect x="238" y="132" width="64" height="16" rx="3" fill="#9e9e9e" opacity="0.85"/>
+  <rect x="366" y="132" width="83" height="16" rx="3" fill="#ff9800" opacity="0.85"/>
+  <rect x="494" y="132" width="96" height="16" rx="3" fill="#f44336" opacity="0.85"/>
+  <text x="164" y="162" fill="#4caf50" font-family="monospace,Courier New" font-size="11" text-anchor="middle">0.60×</text>
+  <text x="292" y="162" fill="#c9d1d9" font-family="monospace,Courier New" font-size="11" text-anchor="middle">1.00×</text>
+  <text x="420" y="162" fill="#ff9800" font-family="monospace,Courier New" font-size="11" text-anchor="middle">1.30×</text>
+  <text x="548" y="162" fill="#f44336" font-family="monospace,Courier New" font-size="11" text-anchor="middle">1.70×</text>
+
+  <!-- ===================== ROW 3: Rocket Frequency ===================== -->
+  <!-- EASY=25%=24, NORMAL=50%=48, HARD=75%=72, EXTREME=100%=96 -->
+  <rect x="110" y="190" width="96" height="16" rx="3" fill="#21262d"/>
+  <rect x="238" y="190" width="96" height="16" rx="3" fill="#21262d"/>
+  <rect x="366" y="190" width="96" height="16" rx="3" fill="#21262d"/>
+  <rect x="494" y="190" width="96" height="16" rx="3" fill="#21262d"/>
+  <rect x="110" y="190" width="24" height="16" rx="3" fill="#4caf50" opacity="0.85"/>
+  <rect x="238" y="190" width="48" height="16" rx="3" fill="#9e9e9e" opacity="0.85"/>
+  <rect x="366" y="190" width="72" height="16" rx="3" fill="#ff9800" opacity="0.85"/>
+  <rect x="494" y="190" width="96" height="16" rx="3" fill="#f44336" opacity="0.85"/>
+  <text x="164" y="220" fill="#4caf50" font-family="monospace,Courier New" font-size="11" text-anchor="middle">0.50×</text>
+  <text x="292" y="220" fill="#c9d1d9" font-family="monospace,Courier New" font-size="11" text-anchor="middle">1.00×</text>
+  <text x="420" y="220" fill="#ff9800" font-family="monospace,Courier New" font-size="11" text-anchor="middle">1.50×</text>
+  <text x="548" y="220" fill="#f44336" font-family="monospace,Courier New" font-size="11" text-anchor="middle">2.00×</text>
+
+  <!-- Score multipliers at bottom -->
+  <line x1="100" y1="230" x2="612" y2="230" stroke="#21262d" stroke-width="1"/>
+  <text x="20" y="248" fill="#8b949e" font-family="monospace,Courier New" font-size="11">Score ×</text>
+  <text x="164" y="248" fill="#4caf50" font-family="monospace,Courier New" font-size="14" font-weight="bold" text-anchor="middle">0.75×</text>
+  <text x="292" y="248" fill="#c9d1d9" font-family="monospace,Courier New" font-size="14" font-weight="bold" text-anchor="middle">1.0×</text>
+  <text x="420" y="248" fill="#ff9800" font-family="monospace,Courier New" font-size="14" font-weight="bold" text-anchor="middle">1.5×</text>
+  <text x="548" y="248" fill="#f44336" font-family="monospace,Courier New" font-size="14" font-weight="bold" text-anchor="middle">2.5×</text>
+</svg>

@@ -11,7 +11,7 @@ var _is_input_active: bool = false
 var raw_input_direction: Vector2 = Vector2.ZERO
 
 # Input smoothing and filtering
-var input_smoothing: float = 0.15
+var input_smoothing: float = 0.05
 var input_deadzone: float = 0.1
 var input_sensitivity: float = 1.0
 
@@ -35,6 +35,12 @@ func _ready():
 func _process(delta):
 	update_input_smoothing(delta)
 	process_keyboard_input()
+	# Continuously update mouse direction while button is held (don't rely on motion events alone)
+	if mouse_active and is_desktop:
+		var mouse_pos = get_viewport().get_mouse_position()
+		var screen_center = get_viewport().get_visible_rect().size / 2.0
+		var direction = (mouse_pos - screen_center).normalized()
+		set_input_direction(direction * input_sensitivity, true)
 
 func setup_platform_specific():
 	"""Configure input settings based on platform"""
@@ -160,19 +166,20 @@ func set_input_direction(new_direction: Vector2, active: bool):
 	var was_active = _is_input_active
 	_is_input_active = active
 
-	# Emit signals if values changed
-	if raw_input_direction != input_direction:
-		emit_signal("input_direction_changed", raw_input_direction)
-
 	if was_active != _is_input_active:
 		emit_signal("input_active_changed", _is_input_active)
 
 func update_input_smoothing(delta):
-	"""Apply smoothing to input direction"""
+	"""Apply smoothing to input direction and emit smoothed value"""
+	var previous_direction = input_direction
 	if input_smoothing > 0.0:
 		input_direction = input_direction.lerp(raw_input_direction, delta / input_smoothing)
 	else:
 		input_direction = raw_input_direction
+
+	# Emit the smoothed direction when it changes meaningfully
+	if input_direction.distance_to(previous_direction) > 0.001:
+		emit_signal("input_direction_changed", input_direction)
 
 func get_input_direction() -> Vector2:
 	"""Get the current smoothed input direction"""

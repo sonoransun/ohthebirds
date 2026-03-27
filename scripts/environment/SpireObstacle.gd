@@ -35,6 +35,7 @@ var lean_angle: float = 0.0
 # Crystal effects (for crystal spires)
 var crystal_pulse_speed: float = 3.0
 var has_wind_effect: bool = false
+var crystal_light: PointLight2D
 
 func _ready():
 	creation_time = Time.get_ticks_msec() / 1000.0
@@ -322,6 +323,15 @@ func setup_crystal_effects():
 	add_child(wind_particles)
 	has_wind_effect = true
 
+	# PointLight2D for crystal bloom
+	crystal_light = PointLight2D.new()
+	crystal_light.color = Color(0.4, 0.7, 1.0)
+	crystal_light.energy = 0.5
+	crystal_light.texture_scale = 2.5
+	crystal_light.shadow_enabled = false
+	crystal_light.position = Vector2(0, -height * 0.5)
+	add_child(crystal_light)
+
 func animate_crystal_effects(delta):
 	"""Animate crystal spire effects"""
 	if not crystal_glow:
@@ -334,6 +344,10 @@ func animate_crystal_effects(delta):
 	# Color shifting
 	var hue_shift = sin(time * crystal_pulse_speed * 0.5) * 0.1
 	crystal_glow.modulate.b = 0.8 + hue_shift
+
+	# Sync PointLight2D energy with crystal pulse
+	if crystal_light:
+		crystal_light.energy = lerp(0.3, 0.8, pulse)
 
 func check_player_proximity():
 	"""Monitor player for strategic feedback"""

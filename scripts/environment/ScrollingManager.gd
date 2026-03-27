@@ -125,7 +125,7 @@ func setup_connections():
 func update_scrolling(delta):
 	"""Update scrolling speed and parallax motion"""
 	# Gradually increase scroll speed based on difficulty
-	var target_speed = base_scroll_speed * GameManager.get_difficulty_multiplier()
+	var target_speed = base_scroll_speed * GameManager.get_difficulty_multiplier() * GameManager.get_scroll_speed_multiplier()
 	target_speed = min(target_speed, max_scroll_speed)
 
 	# Smooth speed transition

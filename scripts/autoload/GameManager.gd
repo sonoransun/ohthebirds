@@ -5,6 +5,7 @@ signal game_state_changed(new_state: GameState)
 signal score_updated(new_score: int)
 signal distance_updated(distance: float)
 signal difficulty_changed(new_level: float)
+signal difficulty_preset_changed(preset: int)
 
 enum GameState {
 	MENU,
@@ -12,6 +13,13 @@ enum GameState {
 	PAUSED,
 	GAME_OVER,
 	TRANSITIONING
+}
+
+enum DifficultyPreset {
+	EASY,
+	NORMAL,
+	HARD,
+	EXTREME
 }
 
 # Game state variables
@@ -28,7 +36,11 @@ var games_played: int = 0
 var base_difficulty: float = 1.0
 var current_difficulty: float = 1.0
 var difficulty_increase_rate: float = 0.1
-var difficulty_distance_interval: float = 1000.0 # Every 1000 units
+var difficulty_distance_interval: float = 1000.0  # Every 1000 units
+
+# Difficulty preset
+var difficulty_preset: int = DifficultyPreset.NORMAL
+var _difficulty_configs: Array[Dictionary] = []
 
 # Game settings
 var game_speed_multiplier: float = 1.0
@@ -40,6 +52,7 @@ var platform: String = ""
 
 func _ready():
 	detect_platform()
+	_init_difficulty_configs()
 	load_game_data()
 	set_process(true)
 
@@ -48,6 +61,69 @@ func _ready():
 func _process(delta):
 	if current_state == GameState.PLAYING:
 		update_game_progression(delta)
+
+func _init_difficulty_configs():
+	"""Initialize the per-preset multiplier configuration table"""
+	_difficulty_configs = [
+		# EASY
+		{
+			"base_difficulty": 0.6,
+			"scroll_speed_multiplier": 0.75,
+			"energy_drain_multiplier": 0.6,
+			"rocket_base_difficulty": 0.5,
+			"warning_time_multiplier": 1.8,
+			"score_multiplier": 0.75
+		},
+		# NORMAL
+		{
+			"base_difficulty": 1.0,
+			"scroll_speed_multiplier": 1.0,
+			"energy_drain_multiplier": 1.0,
+			"rocket_base_difficulty": 1.0,
+			"warning_time_multiplier": 1.0,
+			"score_multiplier": 1.0
+		},
+		# HARD
+		{
+			"base_difficulty": 1.4,
+			"scroll_speed_multiplier": 1.2,
+			"energy_drain_multiplier": 1.3,
+			"rocket_base_difficulty": 1.5,
+			"warning_time_multiplier": 0.6,
+			"score_multiplier": 1.5
+		},
+		# EXTREME
+		{
+			"base_difficulty": 2.0,
+			"scroll_speed_multiplier": 1.5,
+			"energy_drain_multiplier": 1.7,
+			"rocket_base_difficulty": 2.0,
+			"warning_time_multiplier": 0.3,
+			"score_multiplier": 2.5
+		}
+	]
+
+func set_difficulty_preset(preset: int) -> void:
+	"""Set the difficulty preset and apply its base configuration"""
+	difficulty_preset = clamp(preset, 0, DifficultyPreset.EXTREME)
+	base_difficulty = _difficulty_configs[difficulty_preset].base_difficulty
+	emit_signal("difficulty_preset_changed", difficulty_preset)
+	print("Difficulty preset set to: ", DifficultyPreset.keys()[difficulty_preset])
+
+func get_scroll_speed_multiplier() -> float:
+	return _difficulty_configs[difficulty_preset].scroll_speed_multiplier
+
+func get_energy_drain_multiplier() -> float:
+	return _difficulty_configs[difficulty_preset].energy_drain_multiplier
+
+func get_rocket_base_difficulty() -> float:
+	return _difficulty_configs[difficulty_preset].rocket_base_difficulty
+
+func get_warning_time_multiplier() -> float:
+	return _difficulty_configs[difficulty_preset].warning_time_multiplier
+
+func get_score_multiplier() -> float:
+	return _difficulty_configs[difficulty_preset].score_multiplier
 
 func detect_platform() -> void:
 	if OS.get_name() == "Windows":
@@ -60,11 +136,12 @@ func detect_platform() -> void:
 		platform = "unknown"
 
 func start_new_game() -> void:
-	"""Initialize a new game session"""
+	"""Initialize a new game session using the active difficulty preset"""
 	print("Starting new game...")
 
 	current_score = 0
 	distance_traveled = 0.0
+	base_difficulty = _difficulty_configs[difficulty_preset].base_difficulty
 	current_difficulty = base_difficulty
 	is_game_active = true
 	games_played += 1
@@ -125,8 +202,9 @@ func change_state(new_state: GameState) -> void:
 	emit_signal("game_state_changed", new_state)
 
 func add_score(points: int) -> void:
-	"""Add points to the current score"""
-	current_score += points
+	"""Add points scaled by the active difficulty preset's score multiplier"""
+	var scaled_points = int(points * get_score_multiplier())
+	current_score += scaled_points
 	emit_signal("score_updated", current_score)
 
 func update_distance(new_distance: float) -> void:
@@ -147,8 +225,7 @@ func update_game_progression(delta: float) -> void:
 	if not is_game_active:
 		return
 
-	# This will be called by the scrolling system to update distance
-	# The actual distance calculation happens in the scrolling manager
+	# Distance calculation happens in the scrolling manager
 
 func get_game_data() -> Dictionary:
 	"""Get current game data for saving"""
@@ -157,7 +234,8 @@ func get_game_data() -> Dictionary:
 		"games_played": games_played,
 		"sound_enabled": sound_enabled,
 		"music_enabled": music_enabled,
-		"game_speed_multiplier": game_speed_multiplier
+		"game_speed_multiplier": game_speed_multiplier,
+		"difficulty_preset": difficulty_preset
 	}
 
 func save_game_data() -> void:
@@ -193,6 +271,7 @@ func load_game_data() -> void:
 			sound_enabled = save_data.get("sound_enabled", true)
 			music_enabled = save_data.get("music_enabled", true)
 			game_speed_multiplier = save_data.get("game_speed_multiplier", 1.0)
+			difficulty_preset = save_data.get("difficulty_preset", DifficultyPreset.NORMAL)
 
 			print("Game data loaded - High Score: ", high_score)
 		else:

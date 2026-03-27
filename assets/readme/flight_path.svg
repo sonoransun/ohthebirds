@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="200" viewBox="0 0 640 200">
+  <style>
+    /* Glider dot animates along the wave flight pattern */
+    .glider-dot {
+      animation: flyPath 5s ease-in-out infinite;
+    }
+    .glider-glow {
+      animation: flyPath 5s ease-in-out infinite,
+                 glowPulse 5s ease-in-out infinite;
+    }
+    .trail {
+      animation: flyPath 5s ease-in-out infinite;
+      opacity: 0;
+    }
+    @keyframes flyPath {
+      0%   { transform: translate(40px,  100px); }
+      10%  { transform: translate(80px,  115px); }
+      20%  { transform: translate(130px, 128px); }  /* descend - conserve */
+      30%  { transform: translate(190px, 120px); }  /* level */
+      42%  { transform: translate(265px,  72px); }  /* burst upward */
+      52%  { transform: translate(340px,  80px); }  /* level glide */
+      62%  { transform: translate(410px, 115px); }  /* descend again */
+      72%  { transform: translate(470px, 128px); }
+      82%  { transform: translate(530px,  88px); }  /* burst */
+      90%  { transform: translate(580px,  80px); }  /* level */
+      100% { transform: translate(640px,  80px); }
+    }
+    @keyframes glowPulse {
+      0%,42%,52%,82%,92%,100% { r: 10; opacity: 0.3; }
+      47%                      { r: 16; opacity: 0.15; }
+      87%                      { r: 16; opacity: 0.15; }
+    }
+    /* Phase labels fade based on glider position */
+    .label-rest { animation: showRest 5s infinite; }
+    .label-burst { animation: showBurst 5s infinite; }
+    .label-glide { animation: showGlide 5s infinite; }
+    @keyframes showRest  { 0%,8%{opacity:0} 15%,28%{opacity:1} 36%,100%{opacity:0} }
+    @keyframes showBurst { 0%,36%{opacity:0} 42%,52%{opacity:1} 58%,100%{opacity:0} }
+    @keyframes showGlide { 0%,52%{opacity:0} 58%,72%{opacity:1} 80%,100%{opacity:0} }
+  </style>
+
+  <!-- Background -->
+  <rect width="640" height="200" fill="#0d1117" rx="8"/>
+  <rect width="638" height="198" x="1" y="1" fill="none" stroke="#30363d" stroke-width="1" rx="8"/>
+
+  <!-- Title -->
+  <text x="20" y="24" fill="#e6edf3" font-family="monospace,Courier New" font-size="12" font-weight="bold" letter-spacing="2">OPTIMAL FLIGHT PATTERN</text>
+
+  <!-- Ceiling guide (safe upper bound) -->
+  <line x1="30" y1="55" x2="610" y2="55" stroke="#1f6feb" stroke-width="1" stroke-dasharray="6,4" opacity="0.6"/>
+  <text x="614" y="59" fill="#1f6feb" font-family="monospace,Courier New" font-size="9" opacity="0.7">ceiling</text>
+
+  <!-- Floor guide -->
+  <line x1="30" y1="155" x2="610" y2="155" stroke="#3d1f00" stroke-width="1" stroke-dasharray="6,4" opacity="0.8"/>
+  <text x="614" y="159" fill="#3d1f00" font-family="monospace,Courier New" font-size="9" opacity="0.7">ground</text>
+
+  <!-- Obstacle silhouettes -->
+  <polygon points="215,155 230,95 245,155" fill="#3d2b1f" opacity="0.8"/>
+  <polygon points="350,155 360,110 370,155" fill="#3d2b1f" opacity="0.8"/>
+  <polygon points="455,155 470,80 480,155 478,155" fill="#3d2b1f" opacity="0.8"/>
+
+  <!-- Ideal path curve (decorative dashed line) -->
+  <path d="M 40,100 C 80,100 100,130 150,130 C 200,130 240,70 280,80 C 320,90 360,130 420,130 C 460,130 500,80 560,82 C 590,82 610,82 620,82"
+        fill="none" stroke="#2ea043" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.35"/>
+
+  <!-- Glider glow (rendered before dot) -->
+  <circle class="glider-glow" r="10" cx="0" cy="0" fill="#00bcd4" opacity="0.2"/>
+
+  <!-- Glider dot -->
+  <circle class="glider-dot" r="6" cx="0" cy="0" fill="#00e5ff"/>
+  <!-- Glider highlight -->
+  <circle class="glider-dot" r="3" cx="-2" cy="-2" fill="#ffffff" opacity="0.7"/>
+
+  <!-- Phase annotation labels -->
+  <text class="label-rest" x="100" y="170" fill="#ff9800" font-family="monospace,Courier New" font-size="10" text-anchor="middle" opacity="0">↓ conserve energy</text>
+  <text class="label-burst" x="270" y="52" fill="#4caf50" font-family="monospace,Courier New" font-size="10" text-anchor="middle" opacity="0">↑ short input burst</text>
+  <text class="label-glide" x="370" y="72" fill="#2196f3" font-family="monospace,Courier New" font-size="10" text-anchor="middle" opacity="0">→ glide level</text>
+
+  <!-- Static legend -->
+  <circle cx="30" cy="184" r="5" fill="#00e5ff"/>
+  <text x="40" y="188" fill="#8b949e" font-family="monospace,Courier New" font-size="10">glider</text>
+  <line x1="90" y1="184" x2="104" y2="184" stroke="#2ea043" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="108" y="188" fill="#8b949e" font-family="monospace,Courier New" font-size="10">ideal path</text>
+  <polygon points="155,184 162,179 169,184" fill="#3d2b1f" opacity="0.8"/>
+  <text x="174" y="188" fill="#8b949e" font-family="monospace,Courier New" font-size="10">obstacles</text>
+</svg>

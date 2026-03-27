@@ -25,6 +25,7 @@ var creation_time: float
 # Lava flow animation
 var lava_glow_intensity: float = 1.0
 var lava_pulse_speed: float = 2.0
+var lava_light: PointLight2D
 
 func _ready():
 	creation_time = Time.get_ticks_msec() / 1000.0
@@ -177,6 +178,15 @@ func setup_lava_effects():
 	# Add subtle glow animation
 	lava_glow.modulate = Color(1.0, 0.4, 0.0, 0.8)
 
+	# PointLight2D for lava bloom in Forward+ renderer
+	lava_light = PointLight2D.new()
+	lava_light.color = Color(1.0, 0.35, 0.0)
+	lava_light.energy = 0.7
+	lava_light.texture_scale = 3.0
+	lava_light.shadow_enabled = false
+	lava_light.position = Vector2(0, -height * 0.3)
+	add_child(lava_light)
+
 func animate_lava_glow(delta):
 	"""Animate lava glow effect"""
 	if not lava_glow:
@@ -190,6 +200,10 @@ func animate_lava_glow(delta):
 	# Heat distortion effect (color shifting)
 	var heat_intensity = sin(time * lava_pulse_speed * 1.5) * 0.1 + 0.9
 	lava_glow.modulate.r = heat_intensity
+
+	# Sync PointLight2D energy with lava pulse
+	if lava_light:
+		lava_light.energy = lerp(0.5, 1.0, pulse)
 
 func check_player_proximity():
 	"""Check if player is approaching for strategic warnings"""
