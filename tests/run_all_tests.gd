@@ -24,6 +24,7 @@ func _initialize() -> void:
 		"res://tests/unit/test_input_manager.gd",
 		"res://tests/unit/test_sugar_glider.gd",
 		"res://tests/unit/test_difficulty_presets.gd",
+		"res://tests/unit/test_character_selection.gd",
 		"res://tests/integration/test_flythrough.gd",
 	]
 

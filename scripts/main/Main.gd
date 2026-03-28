@@ -33,13 +33,16 @@ var camera_follow_speed: float = 2.0
 var camera_offset: Vector2 = Vector2(300, 0)
 var debug_enabled: bool = false
 
-# Difficulty selection overlay (built in code)
+# Selection overlays (built in code)
+var animal_overlay: CanvasLayer
 var difficulty_overlay: CanvasLayer
 
 func _ready():
 	_initialize_visual_environment()
 	setup_connections()
+	_create_animal_menu()
 	_create_difficulty_menu()
+	difficulty_overlay.hide()
 
 	print("Main scene initialized")
 
@@ -70,6 +73,66 @@ func _initialize_visual_environment():
 	env.glow_normalized = true
 	world_env.environment = env
 	add_child(world_env)
+
+func _create_animal_menu():
+	"""Build the animal selection overlay entirely in code"""
+	animal_overlay = CanvasLayer.new()
+	animal_overlay.layer = 11
+	add_child(animal_overlay)
+
+	var panel = Panel.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.78)
+	panel.add_theme_stylebox_override("panel", style)
+	animal_overlay.add_child(panel)
+
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	vbox.custom_minimum_size = Vector2(440, 320)
+	vbox.offset_left = -220
+	vbox.offset_top = -160
+	vbox.add_theme_constant_override("separation", 14)
+	panel.add_child(vbox)
+
+	var title = Label.new()
+	title.text = "SUGAR GLIDER ADVENTURE"
+	title.add_theme_font_size_override("font_size", 26)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.modulate = Color(1.0, 0.65, 0.2)
+	vbox.add_child(title)
+
+	var subtitle = Label.new()
+	subtitle.text = "Choose Your Animal"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.modulate = Color(0.75, 0.75, 0.75)
+	vbox.add_child(subtitle)
+
+	var spacer = Control.new()
+	spacer.custom_minimum_size = Vector2(0, 8)
+	vbox.add_child(spacer)
+
+	var animal_data = [
+		{"label": "SUGAR GLIDER  [balanced]",      "color": Color(0.6, 0.9, 1.0),  "type": GameManager.AnimalType.SUGAR_GLIDER},
+		{"label": "SPARROW       [agile]",          "color": Color(0.4, 0.9, 0.4),  "type": GameManager.AnimalType.SPARROW},
+		{"label": "FALCON        [speed]",          "color": Color(1.0, 0.55, 0.1), "type": GameManager.AnimalType.FALCON},
+	]
+
+	for data in animal_data:
+		var btn = Button.new()
+		btn.text = data.label
+		btn.custom_minimum_size = Vector2(400, 52)
+		btn.add_theme_color_override("font_color", data.color)
+		btn.add_theme_font_size_override("font_size", 18)
+		var animal_type = data.type
+		btn.pressed.connect(func(): _on_animal_selected(animal_type))
+		vbox.add_child(btn)
+
+func _on_animal_selected(animal_type: int):
+	"""Handle animal button press — set animal and show difficulty menu"""
+	GameManager.set_animal(animal_type)
+	animal_overlay.hide()
+	difficulty_overlay.show()
 
 func _create_difficulty_menu():
 	"""Build the difficulty selection overlay entirely in code"""
@@ -161,6 +224,9 @@ func initialize_game():
 	camera_follow_speed = 2.0
 	GameManager.start_new_game()
 
+	if sugar_glider:
+		sugar_glider.apply_animal_profile()
+
 	if camera and sugar_glider:
 		camera.position = sugar_glider.global_position + camera_offset
 
@@ -239,10 +305,10 @@ func toggle_pause():
 		GameManager.resume_game()
 
 func restart_game():
-	"""Restart — show difficulty menu so player can choose again"""
-	if difficulty_overlay:
+	"""Restart — show animal menu so player can choose animal and difficulty again"""
+	if animal_overlay:
 		GameManager.return_to_menu()
-		difficulty_overlay.show()
+		animal_overlay.show()
 
 func toggle_debug():
 	"""Toggle debug information display"""
@@ -373,10 +439,10 @@ func handle_game_over():
 
 	print("Game Over! Final Score: ", GameManager.get_current_score())
 
-	# Show difficulty menu after brief pause so player sees the moment
+	# Show animal menu after brief pause so player sees the moment
 	get_tree().create_timer(1.5).timeout.connect(func():
-		if difficulty_overlay:
-			difficulty_overlay.show()
+		if animal_overlay:
+			animal_overlay.show()
 	)
 
 func add_screen_shake(duration: float, strength: float):

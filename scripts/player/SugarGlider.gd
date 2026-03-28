@@ -20,14 +20,14 @@ enum AnimationState {
 
 # Physics constants
 const GRAVITY: float = 980.0  # Pixels per second squared
-const MAX_FALL_SPEED: float = 800.0
-const AIR_RESISTANCE: float = 0.98
-const GLIDE_RESISTANCE: float = 0.995  # Less resistance when gliding
+var MAX_FALL_SPEED: float = 800.0
+var AIR_RESISTANCE: float = 0.98
+var GLIDE_RESISTANCE: float = 0.995  # Less resistance when gliding
 
 # Gliding mechanics
-const GLIDE_LIFT_COEFFICIENT: float = 0.3  # How much speed converts to lift
-const MIN_GLIDE_SPEED: float = 100.0  # Minimum horizontal speed for gliding
-const MAX_GLIDE_SPEED: float = 600.0
+var GLIDE_LIFT_COEFFICIENT: float = 0.3  # How much speed converts to lift
+var MIN_GLIDE_SPEED: float = 100.0  # Minimum horizontal speed for gliding
+var MAX_GLIDE_SPEED: float = 600.0
 const GLIDE_ANGLE_RANGE: float = 45.0  # Degrees up/down from horizontal
 
 # Energy system
@@ -79,15 +79,27 @@ func _ready():
 	# Set up node references
 	setup_node_references()
 
+	# Apply per-animal physics profile (sets velocity and energy too)
+	apply_animal_profile()
+
 	# Connect to input manager
 	InputManager.input_direction_changed.connect(_on_input_direction_changed)
 	InputManager.input_active_changed.connect(_on_input_active_changed)
 
-	# Set up initial state
-	current_energy = MAX_ENERGY
-	velocity = Vector2(MIN_GLIDE_SPEED, 0)  # Start with minimum gliding speed
-
 	print("Sugar Glider initialized")
+
+func apply_animal_profile() -> void:
+	"""Apply the active GameManager animal config to physics vars."""
+	var cfg = GameManager.get_animal_config()
+	MAX_GLIDE_SPEED        = cfg.max_glide_speed
+	MIN_GLIDE_SPEED        = cfg.min_glide_speed
+	input_force            = cfg.input_force
+	AIR_RESISTANCE         = cfg.air_resistance
+	GLIDE_RESISTANCE       = cfg.glide_resistance
+	GLIDE_LIFT_COEFFICIENT = cfg.glide_lift_coefficient
+	MAX_FALL_SPEED         = cfg.max_fall_speed
+	velocity = Vector2(MIN_GLIDE_SPEED, 0)
+	current_energy = MAX_ENERGY
 
 func setup_node_references():
 	"""Set up references to child nodes"""

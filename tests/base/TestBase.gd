@@ -81,6 +81,12 @@ func assert_gte(actual: float, than: float, msg: String = "") -> void:
 	if actual < than:
 		_record_failure("%.4f is not >= %.4f%s" % [actual, than, " — " + msg if msg else ""])
 
+## Asserts that actual <= than.
+func assert_lte(actual: float, than: float, msg: String = "") -> void:
+	_current_test_assertions += 1
+	if actual > than:
+		_record_failure("%.4f is not <= %.4f%s" % [actual, than, " — " + msg if msg else ""])
+
 ## Asserts that value is null.
 func assert_null(value, msg: String = "") -> void:
 	_current_test_assertions += 1

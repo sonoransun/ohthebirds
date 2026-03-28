@@ -6,6 +6,7 @@ signal score_updated(new_score: int)
 signal distance_updated(distance: float)
 signal difficulty_changed(new_level: float)
 signal difficulty_preset_changed(preset: int)
+signal animal_selected(animal_type: int)
 
 enum GameState {
 	MENU,
@@ -20,6 +21,12 @@ enum DifficultyPreset {
 	NORMAL,
 	HARD,
 	EXTREME
+}
+
+enum AnimalType {
+	SUGAR_GLIDER,
+	SPARROW,
+	FALCON
 }
 
 # Game state variables
@@ -42,6 +49,10 @@ var difficulty_distance_interval: float = 1000.0  # Every 1000 units
 var difficulty_preset: int = DifficultyPreset.NORMAL
 var _difficulty_configs: Array[Dictionary] = []
 
+# Animal selection
+var selected_animal: int = AnimalType.SUGAR_GLIDER
+var _animal_configs: Array[Dictionary] = []
+
 # Game settings
 var game_speed_multiplier: float = 1.0
 var sound_enabled: bool = true
@@ -53,6 +64,7 @@ var platform: String = ""
 func _ready():
 	detect_platform()
 	_init_difficulty_configs()
+	_init_animal_configs()
 	load_game_data()
 	set_process(true)
 
@@ -102,6 +114,59 @@ func _init_difficulty_configs():
 			"score_multiplier": 2.5
 		}
 	]
+
+func _init_animal_configs():
+	"""Initialize the per-animal physics profile table"""
+	_animal_configs = [
+		# SUGAR_GLIDER — balanced speed and agility
+		{
+			"display_name": "Sugar Glider",
+			"description": "Balanced speed and agility",
+			"max_glide_speed": 600.0,
+			"min_glide_speed": 100.0,
+			"input_force": 450.0,
+			"air_resistance": 0.98,
+			"glide_resistance": 0.995,
+			"glide_lift_coefficient": 0.3,
+			"max_fall_speed": 800.0,
+		},
+		# SPARROW — less top speed, more maneuverability
+		{
+			"display_name": "Sparrow",
+			"description": "Swift turns, modest top speed",
+			"max_glide_speed": 450.0,
+			"min_glide_speed": 80.0,
+			"input_force": 580.0,
+			"air_resistance": 0.985,
+			"glide_resistance": 0.997,
+			"glide_lift_coefficient": 0.38,
+			"max_fall_speed": 700.0,
+		},
+		# FALCON — highest top speed, least agility
+		{
+			"display_name": "Falcon",
+			"description": "Blazing speed, heavy handling",
+			"max_glide_speed": 780.0,
+			"min_glide_speed": 130.0,
+			"input_force": 300.0,
+			"air_resistance": 0.972,
+			"glide_resistance": 0.991,
+			"glide_lift_coefficient": 0.22,
+			"max_fall_speed": 980.0,
+		},
+	]
+
+func set_animal(animal_type: int) -> void:
+	"""Set the active animal and emit signal"""
+	selected_animal = clamp(animal_type, 0, AnimalType.FALCON)
+	emit_signal("animal_selected", selected_animal)
+	print("Animal selected: ", AnimalType.keys()[selected_animal])
+
+func get_animal_config() -> Dictionary:
+	return _animal_configs[selected_animal]
+
+func get_animal_display_name() -> String:
+	return _animal_configs[selected_animal].display_name
 
 func set_difficulty_preset(preset: int) -> void:
 	"""Set the difficulty preset and apply its base configuration"""
@@ -235,7 +300,8 @@ func get_game_data() -> Dictionary:
 		"sound_enabled": sound_enabled,
 		"music_enabled": music_enabled,
 		"game_speed_multiplier": game_speed_multiplier,
-		"difficulty_preset": difficulty_preset
+		"difficulty_preset": difficulty_preset,
+		"selected_animal": selected_animal
 	}
 
 func save_game_data() -> void:
@@ -272,6 +338,7 @@ func load_game_data() -> void:
 			music_enabled = save_data.get("music_enabled", true)
 			game_speed_multiplier = save_data.get("game_speed_multiplier", 1.0)
 			difficulty_preset = save_data.get("difficulty_preset", DifficultyPreset.NORMAL)
+			selected_animal = save_data.get("selected_animal", AnimalType.SUGAR_GLIDER)
 
 			print("Game data loaded - High Score: ", high_score)
 		else:
