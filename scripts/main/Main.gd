@@ -37,17 +37,33 @@ var debug_enabled: bool = false
 var animal_overlay: CanvasLayer
 var difficulty_overlay: CanvasLayer
 
+# Intro screen
+var intro_overlay: CanvasLayer
+var intro_active: bool = true
+var intro_pulse_tween: Tween
+
 func _ready():
 	_initialize_visual_environment()
 	setup_connections()
+	_create_intro_screen()
 	_create_animal_menu()
 	_create_difficulty_menu()
+	# Hide selection menus until intro is dismissed
+	animal_overlay.hide()
 	difficulty_overlay.hide()
 
 	print("Main scene initialized")
 
 func _input(event):
 	"""Handle main scene input"""
+	if intro_active:
+		if (event is InputEventKey and event.pressed and not event.echo) \
+			or (event is InputEventMouseButton and event.pressed) \
+			or (event is InputEventScreenTouch and event.pressed) \
+			or (event is InputEventJoypadButton and event.pressed):
+			_dismiss_intro()
+		return
+
 	if event.is_action_pressed("pause_game"):
 		toggle_pause()
 	elif event.is_action_pressed("restart_game"):
@@ -462,3 +478,447 @@ func add_screen_shake(duration: float, strength: float):
 		tween.tween_property(camera, "position", original_position + shake_offset, 0.016)
 
 	tween.tween_property(camera, "position", original_position, 0.1)
+
+# ── Intro screen ──────────────────────────────────────────────────────────
+
+func _create_intro_screen():
+	"""Build the intro/title screen overlay"""
+	intro_overlay = CanvasLayer.new()
+	intro_overlay.layer = 12
+	add_child(intro_overlay)
+
+	# Full-screen dark volcanic panel
+	var panel = Panel.new()
+	panel.name = "IntroPanel"
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.04, 0.01, 0.01, 0.95)
+	panel.add_theme_stylebox_override("panel", style)
+	intro_overlay.add_child(panel)
+
+	# Centered vertical layout
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	vbox.custom_minimum_size = Vector2(1100, 850)
+	vbox.offset_left = -550
+	vbox.offset_top = -425
+	vbox.add_theme_constant_override("separation", 10)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(vbox)
+
+	# Title
+	var title = Label.new()
+	title.name = "IntroTitle"
+	title.text = "SUGAR GLIDER ADVENTURE"
+	title.add_theme_font_size_override("font_size", 48)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.modulate = Color(1.0, 0.65, 0.2)
+	vbox.add_child(title)
+
+	# Subtitle
+	var subtitle = Label.new()
+	subtitle.text = "A Volcanic Flying Adventure"
+	subtitle.add_theme_font_size_override("font_size", 20)
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.modulate = Color(0.7, 0.7, 0.7)
+	vbox.add_child(subtitle)
+
+	# Spacer
+	var spacer1 = Control.new()
+	spacer1.custom_minimum_size = Vector2(0, 10)
+	vbox.add_child(spacer1)
+
+	# Scene banner — terrain with glider in flight
+	var scene_area = Control.new()
+	scene_area.custom_minimum_size = Vector2(1100, 240)
+	scene_area.clip_contents = true
+	vbox.add_child(scene_area)
+	_create_intro_scene(scene_area)
+
+	# Spacer
+	var spacer2 = Control.new()
+	spacer2.custom_minimum_size = Vector2(0, 14)
+	vbox.add_child(spacer2)
+
+	# "Choose Your Creature" label
+	var creature_header = Label.new()
+	creature_header.text = "Choose Your Creature"
+	creature_header.add_theme_font_size_override("font_size", 22)
+	creature_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	creature_header.modulate = Color(0.85, 0.85, 0.85)
+	vbox.add_child(creature_header)
+
+	# Creature showcase — 3 cards side by side
+	var creature_hbox = HBoxContainer.new()
+	creature_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	creature_hbox.add_theme_constant_override("separation", 50)
+	vbox.add_child(creature_hbox)
+
+	var creatures = [
+		{"name": "Sugar Glider", "desc": "Balanced speed and agility", "color": Color(0.6, 0.9, 1.0), "type": "glider"},
+		{"name": "Sparrow", "desc": "Swift turns, modest top speed", "color": Color(0.4, 0.9, 0.4), "type": "sparrow"},
+		{"name": "Falcon", "desc": "Blazing speed, heavy handling", "color": Color(1.0, 0.55, 0.1), "type": "falcon"},
+	]
+	var creature_cards = []
+	for data in creatures:
+		var card = _create_creature_card(data)
+		creature_hbox.add_child(card)
+		creature_cards.append(card)
+
+	# Spacer
+	var spacer3 = Control.new()
+	spacer3.custom_minimum_size = Vector2(0, 14)
+	vbox.add_child(spacer3)
+
+	# Control hints
+	var controls = Label.new()
+	controls.name = "ControlHints"
+	controls.text = "W / \u2191 / SPACE = Fly Up      S / \u2193 = Dive      A / \u2190 = Slow      D / \u2192 = Speed Up"
+	controls.add_theme_font_size_override("font_size", 16)
+	controls.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	controls.modulate = Color(0.65, 0.65, 0.65)
+	vbox.add_child(controls)
+
+	# Spacer
+	var spacer4 = Control.new()
+	spacer4.custom_minimum_size = Vector2(0, 16)
+	vbox.add_child(spacer4)
+
+	# Press any key prompt
+	var prompt = Label.new()
+	prompt.name = "PressAnyKey"
+	prompt.text = "\u2014 Press Any Key to Begin \u2014"
+	prompt.add_theme_font_size_override("font_size", 22)
+	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt.modulate = Color(0.6, 0.9, 1.0)
+	vbox.add_child(prompt)
+
+	# Entrance animations
+	_animate_intro_entrance(title, subtitle, scene_area, creature_cards, controls, prompt)
+
+func _create_intro_scene(container: Control):
+	"""Build a procedural terrain scene with a glider flying over volcanoes"""
+	var scene_root = Node2D.new()
+	scene_root.position = Vector2(0, 0)
+	container.add_child(scene_root)
+
+	# Sky gradient background
+	var sky = ColorRect.new()
+	sky.color = Color(0.06, 0.02, 0.02, 1.0)
+	sky.size = Vector2(1100, 240)
+	container.add_child(sky)
+	container.move_child(sky, 0)
+
+	# Lava glow at horizon
+	var glow = ColorRect.new()
+	glow.color = Color(1.0, 0.25, 0.0, 0.15)
+	glow.position = Vector2(0, 180)
+	glow.size = Vector2(1100, 60)
+	container.add_child(glow)
+
+	# Far mountain ridge (dark)
+	var far_mountains = Polygon2D.new()
+	far_mountains.polygon = PackedVector2Array([
+		Vector2(0, 240), Vector2(0, 170), Vector2(60, 140), Vector2(120, 160),
+		Vector2(180, 120), Vector2(250, 150), Vector2(320, 110), Vector2(400, 145),
+		Vector2(480, 100), Vector2(550, 135), Vector2(620, 115), Vector2(700, 140),
+		Vector2(780, 105), Vector2(850, 130), Vector2(920, 95), Vector2(980, 125),
+		Vector2(1040, 110), Vector2(1100, 140), Vector2(1100, 240),
+	])
+	far_mountains.color = Color(0.12, 0.04, 0.04)
+	container.add_child(far_mountains)
+
+	# Mid volcanoes (slightly brighter)
+	var mid_volcanoes = Polygon2D.new()
+	mid_volcanoes.polygon = PackedVector2Array([
+		Vector2(0, 240), Vector2(0, 200),
+		Vector2(80, 185), Vector2(150, 120), Vector2(220, 185),  # volcano 1
+		Vector2(320, 195), Vector2(420, 100), Vector2(480, 140), Vector2(520, 190),  # volcano 2
+		Vector2(620, 200), Vector2(720, 85), Vector2(820, 195),  # volcano 3
+		Vector2(900, 175), Vector2(960, 130), Vector2(1020, 175),  # small peak
+		Vector2(1100, 195), Vector2(1100, 240),
+	])
+	mid_volcanoes.color = Color(0.2, 0.08, 0.04)
+	container.add_child(mid_volcanoes)
+
+	# Foreground spires
+	var fg_spires = Polygon2D.new()
+	fg_spires.polygon = PackedVector2Array([
+		Vector2(0, 240), Vector2(0, 210),
+		Vector2(40, 195), Vector2(70, 165), Vector2(100, 200),
+		Vector2(250, 215), Vector2(280, 180), Vector2(310, 215),
+		Vector2(500, 220), Vector2(530, 190), Vector2(545, 155), Vector2(560, 190), Vector2(590, 220),
+		Vector2(780, 210), Vector2(810, 170), Vector2(840, 210),
+		Vector2(1000, 215), Vector2(1030, 185), Vector2(1060, 215),
+		Vector2(1100, 210), Vector2(1100, 240),
+	])
+	fg_spires.color = Color(0.28, 0.12, 0.06)
+	container.add_child(fg_spires)
+
+	# Lava spots on volcano peaks
+	var lava1 = Polygon2D.new()
+	lava1.polygon = PackedVector2Array([
+		Vector2(140, 125), Vector2(150, 120), Vector2(160, 125), Vector2(150, 130),
+	])
+	lava1.color = Color(1.0, 0.4, 0.0, 0.7)
+	container.add_child(lava1)
+
+	var lava2 = Polygon2D.new()
+	lava2.polygon = PackedVector2Array([
+		Vector2(410, 105), Vector2(420, 100), Vector2(430, 105), Vector2(420, 112),
+	])
+	lava2.color = Color(1.0, 0.35, 0.0, 0.8)
+	container.add_child(lava2)
+
+	var lava3 = Polygon2D.new()
+	lava3.polygon = PackedVector2Array([
+		Vector2(710, 90), Vector2(720, 85), Vector2(730, 90), Vector2(720, 97),
+	])
+	lava3.color = Color(1.0, 0.45, 0.0, 0.7)
+	container.add_child(lava3)
+
+	# Glider in flight
+	var glider_node = Node2D.new()
+	glider_node.position = Vector2(600, 80)
+	glider_node.rotation_degrees = -8.0
+	container.add_child(glider_node)
+
+	var glider = _create_glider_silhouette()
+	glider.scale = Vector2(0.8, 0.8)
+	glider_node.add_child(glider)
+
+	# Glider glow
+	var glider_glow = Polygon2D.new()
+	glider_glow.polygon = _make_circle_polygon(20.0, 12)
+	glider_glow.color = Color(0.6, 0.9, 1.0, 0.15)
+	glider_node.add_child(glider_glow)
+
+func _create_creature_card(data: Dictionary) -> VBoxContainer:
+	"""Build a single creature showcase card"""
+	var card = VBoxContainer.new()
+	card.custom_minimum_size = Vector2(300, 200)
+	card.add_theme_constant_override("separation", 6)
+	card.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	# Silhouette area
+	var sil_area = Control.new()
+	sil_area.custom_minimum_size = Vector2(300, 110)
+	card.add_child(sil_area)
+
+	var sil_node = Node2D.new()
+	sil_node.position = Vector2(150, 55)
+	sil_area.add_child(sil_node)
+
+	var silhouette: Polygon2D
+	match data.type:
+		"glider":
+			silhouette = _create_glider_silhouette()
+		"sparrow":
+			silhouette = _create_sparrow_silhouette()
+		"falcon":
+			silhouette = _create_falcon_silhouette()
+
+	sil_node.add_child(silhouette)
+
+	# Creature name
+	var name_label = Label.new()
+	name_label.text = data.name
+	name_label.add_theme_font_size_override("font_size", 20)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.modulate = data.color
+	card.add_child(name_label)
+
+	# Description
+	var desc_label = Label.new()
+	desc_label.text = data.desc
+	desc_label.add_theme_font_size_override("font_size", 14)
+	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_label.modulate = Color(0.6, 0.6, 0.6)
+	card.add_child(desc_label)
+
+	return card
+
+func _create_glider_silhouette() -> Polygon2D:
+	"""Procedural sugar glider shape — body with gliding membrane wings"""
+	var poly = Polygon2D.new()
+	# Body + membrane shape, centered at origin, ~120x60
+	poly.polygon = PackedVector2Array([
+		# Right wing tip
+		Vector2(60, -8),
+		# Right wing trailing edge
+		Vector2(45, 12),
+		# Body right
+		Vector2(30, 14),
+		# Tail
+		Vector2(-55, 18), Vector2(-60, 12), Vector2(-50, 10),
+		# Body bottom
+		Vector2(-30, 10),
+		# Left wing trailing edge
+		Vector2(-45, 12),
+		# Left wing tip
+		Vector2(-60, -8),
+		# Left wing leading edge
+		Vector2(-40, -14),
+		# Body left top
+		Vector2(-20, -12),
+		# Head
+		Vector2(15, -16), Vector2(30, -18), Vector2(38, -14),
+		Vector2(42, -8),
+		# Right wing leading edge
+		Vector2(50, -12),
+	])
+	poly.color = Color(0.6, 0.9, 1.0, 0.85)
+	# Eye
+	var eye = Polygon2D.new()
+	eye.polygon = _make_circle_polygon(3.0, 8)
+	eye.position = Vector2(34, -12)
+	eye.color = Color(0.15, 0.15, 0.15)
+	poly.add_child(eye)
+	return poly
+
+func _create_sparrow_silhouette() -> Polygon2D:
+	"""Procedural sparrow shape — compact body with rounded wings"""
+	var poly = Polygon2D.new()
+	poly.polygon = PackedVector2Array([
+		# Beak
+		Vector2(45, -2), Vector2(50, 0), Vector2(45, 2),
+		# Head top
+		Vector2(30, -12), Vector2(20, -16),
+		# Left wing up
+		Vector2(-5, -22), Vector2(-25, -30), Vector2(-35, -26),
+		# Left wing back
+		Vector2(-30, -14),
+		# Back
+		Vector2(-35, -4),
+		# Tail fork
+		Vector2(-55, -8), Vector2(-50, 0), Vector2(-55, 8),
+		# Body bottom
+		Vector2(-35, 4),
+		# Right wing back
+		Vector2(-30, 14),
+		# Right wing down
+		Vector2(-35, 26), Vector2(-25, 30), Vector2(-5, 22),
+		# Belly
+		Vector2(20, 16), Vector2(30, 12),
+		# Chin
+		Vector2(40, 4),
+	])
+	poly.color = Color(0.4, 0.9, 0.4, 0.85)
+	# Eye
+	var eye = Polygon2D.new()
+	eye.polygon = _make_circle_polygon(3.0, 8)
+	eye.position = Vector2(32, -6)
+	eye.color = Color(0.15, 0.15, 0.15)
+	poly.add_child(eye)
+	return poly
+
+func _create_falcon_silhouette() -> Polygon2D:
+	"""Procedural falcon shape — streamlined with swept-back angular wings"""
+	var poly = Polygon2D.new()
+	poly.polygon = PackedVector2Array([
+		# Hooked beak
+		Vector2(55, -2), Vector2(58, 0), Vector2(56, 3), Vector2(52, 2),
+		# Head
+		Vector2(38, -10), Vector2(25, -14),
+		# Left wing leading edge
+		Vector2(10, -18), Vector2(-20, -32), Vector2(-45, -38),
+		# Left wing tip (swept back)
+		Vector2(-60, -34),
+		# Left wing trailing edge
+		Vector2(-40, -16),
+		# Back
+		Vector2(-35, -4),
+		# Tail
+		Vector2(-58, -6), Vector2(-65, 0), Vector2(-58, 6),
+		# Body bottom
+		Vector2(-35, 4),
+		# Right wing trailing edge
+		Vector2(-40, 16),
+		# Right wing tip (swept back)
+		Vector2(-60, 34),
+		# Right wing leading edge
+		Vector2(-45, 38), Vector2(-20, 32), Vector2(10, 18),
+		# Belly
+		Vector2(25, 14), Vector2(38, 10),
+		# Chin
+		Vector2(48, 4),
+	])
+	poly.color = Color(1.0, 0.55, 0.1, 0.85)
+	# Eye
+	var eye = Polygon2D.new()
+	eye.polygon = _make_circle_polygon(3.0, 8)
+	eye.position = Vector2(40, -5)
+	eye.color = Color(0.15, 0.15, 0.15)
+	poly.add_child(eye)
+	return poly
+
+func _make_circle_polygon(radius: float, segments: int) -> PackedVector2Array:
+	"""Generate a circle as PackedVector2Array"""
+	var points = PackedVector2Array()
+	for i in segments:
+		var angle = TAU * i / segments
+		points.append(Vector2(cos(angle), sin(angle)) * radius)
+	return points
+
+func _animate_intro_entrance(title: Label, subtitle: Label, scene_area: Control, creature_cards: Array, controls: Label, prompt: Label):
+	"""Apply staggered entrance animations to intro elements"""
+	# Start everything invisible
+	title.modulate.a = 0
+	subtitle.modulate.a = 0
+	scene_area.modulate = Color(1, 1, 1, 0)
+	for card in creature_cards:
+		card.modulate = Color(1, 1, 1, 0)
+	controls.modulate.a = 0
+	prompt.modulate.a = 0
+
+	var tween = create_tween()
+	tween.set_parallel(true)
+
+	# Title fades in
+	tween.tween_property(title, "modulate:a", title.modulate.a, 0.0)  # no-op anchor
+	tween.tween_property(title, "modulate:a", 1.0, 0.6).set_delay(0.1)
+
+	# Subtitle
+	tween.tween_property(subtitle, "modulate:a", 1.0, 0.5).set_delay(0.3)
+
+	# Scene area
+	tween.tween_property(scene_area, "modulate:a", 1.0, 0.6).set_delay(0.4)
+
+	# Creature cards stagger
+	for i in creature_cards.size():
+		tween.tween_property(creature_cards[i], "modulate:a", 1.0, 0.5).set_delay(0.6 + i * 0.15)
+
+	# Controls
+	tween.tween_property(controls, "modulate:a", 1.0, 0.4).set_delay(1.1)
+
+	# Prompt
+	tween.tween_property(prompt, "modulate:a", 1.0, 0.4).set_delay(1.3)
+
+	# Start pulse tween on prompt after entrance completes
+	tween.chain().tween_callback(func():
+		_start_prompt_pulse(prompt)
+	).set_delay(1.5)
+
+func _start_prompt_pulse(prompt: Label):
+	"""Start the looping pulse animation on the press-any-key prompt"""
+	intro_pulse_tween = create_tween().set_loops()
+	intro_pulse_tween.tween_property(prompt, "modulate:a", 0.3, 0.8).set_trans(Tween.TRANS_SINE)
+	intro_pulse_tween.tween_property(prompt, "modulate:a", 1.0, 0.8).set_trans(Tween.TRANS_SINE)
+
+func _dismiss_intro():
+	"""Fade out intro screen and show animal selection"""
+	if not intro_active:
+		return
+	intro_active = false
+
+	if intro_pulse_tween:
+		intro_pulse_tween.kill()
+
+	# Fade out the panel (first child of the CanvasLayer)
+	var panel = intro_overlay.get_child(0)
+	var fade = create_tween()
+	fade.tween_property(panel, "modulate:a", 0.0, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	fade.tween_callback(func():
+		intro_overlay.hide()
+		animal_overlay.show()
+	)
