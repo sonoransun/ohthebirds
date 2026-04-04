@@ -304,13 +304,22 @@ func get_navigation_hint() -> String:
 # Cleanup and optimization
 func cleanup():
 	"""Clean up resources when obstacle is no longer needed"""
+	if not is_instance_valid(self):
+		return
+
 	if steam_particles:
 		steam_particles.emitting = false
 
-	# Fade out before deletion
+	# Fade out before deletion, with fallback queue_free on completion
 	var tween = create_tween()
-	tween.tween_property(self, "modulate", Color(1.0, 1.0, 1.0, 0.0), 1.0)
-	tween.tween_callback(queue_free)
+	if tween:
+		tween.tween_property(self, "modulate", Color(1.0, 1.0, 1.0, 0.0), 1.0)
+		tween.tween_callback(func():
+			if is_instance_valid(self):
+				queue_free()
+		)
+	else:
+		queue_free()
 
 func get_obstacle_info() -> Dictionary:
 	"""Get obstacle information for debugging and analytics"""

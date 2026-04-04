@@ -130,3 +130,71 @@ func test_is_not_moving_when_neutral() -> void:
 	assert_false(InputManager.is_moving_down(), "neutral direction is not moving down")
 	assert_false(InputManager.is_moving_left(), "neutral direction is not moving left")
 	assert_false(InputManager.is_moving_right(), "neutral direction is not moving right")
+
+# ============================================================
+# TOUCH DRAG THRESHOLD TEST
+# ============================================================
+
+func test_touch_drag_threshold_configurable() -> void:
+	var saved_threshold = InputManager.touch_drag_threshold
+	InputManager.touch_drag_threshold = 100.0
+	assert_approx_equal(InputManager.touch_drag_threshold, 100.0, 0.001,
+		"touch_drag_threshold should store the assigned value")
+	InputManager.touch_drag_threshold = saved_threshold
+
+# ============================================================
+# RESET INPUT STATE TESTS
+# ============================================================
+
+func test_reset_input_state_clears_direction() -> void:
+	InputManager.input_direction = Vector2(1.0, 1.0)
+	InputManager.reset_input_state()
+	assert_approx_equal(InputManager.input_direction.length(), 0.0, 0.001,
+		"input_direction should be zero after reset_input_state")
+
+func test_reset_input_state_clears_active() -> void:
+	InputManager._is_input_active = true
+	InputManager.reset_input_state()
+	assert_false(InputManager.is_input_active(),
+		"is_input_active should be false after reset_input_state")
+
+func test_reset_input_state_clears_touch() -> void:
+	InputManager.touch_active = true
+	InputManager.reset_input_state()
+	assert_false(InputManager.touch_active,
+		"touch_active should be false after reset_input_state")
+
+func test_reset_input_state_clears_mouse() -> void:
+	InputManager.mouse_active = true
+	InputManager.reset_input_state()
+	assert_false(InputManager.mouse_active,
+		"mouse_active should be false after reset_input_state")
+
+# ============================================================
+# DEADZONE BOUNDARY TEST
+# ============================================================
+
+func test_input_at_exactly_deadzone_threshold() -> void:
+	# A direction just below the deadzone (0.1) should NOT register as moving
+	InputManager.input_direction = Vector2(0.09, 0.0)
+	assert_false(InputManager.is_moving_right(),
+		"direction below the deadzone threshold should not register as moving")
+	# A direction clearly above should register
+	InputManager.input_direction = Vector2(0.2, 0.0)
+	assert_true(InputManager.is_moving_right(),
+		"direction above the deadzone threshold should register as moving")
+
+# ============================================================
+# SMOOTHING CLAMP TEST
+# ============================================================
+
+func test_smoothing_clamp_prevents_overshoot() -> void:
+	InputManager.input_smoothing = 0.001  # Very small smoothing
+	InputManager.raw_input_direction = Vector2(1.0, 0.0)
+	InputManager.input_direction = Vector2.ZERO  # Start at zero
+
+	# Large delta relative to smoothing — lerp factor should be clamped to 1.0
+	InputManager.update_input_smoothing(1.0)
+
+	assert_approx_equal(InputManager.input_direction.x, 1.0, 0.001,
+		"with clamped lerp factor, direction should equal raw after large delta")

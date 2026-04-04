@@ -55,6 +55,10 @@ var cluster_split_triggered: bool = false
 # Environmental effects
 var smoke_trail_nodes: Array[Node2D] = []
 
+# Safety: absolute maximum lifetime to prevent orphaned rockets
+const MAX_LIFETIME: float = 30.0
+var elapsed_time: float = 0.0
+
 func _ready():
 	launch_time = Time.get_ticks_msec() / 1000.0
 	current_speed = launch_speed
@@ -77,6 +81,13 @@ func _ready():
 	print("Rocket launched: ", RocketType.keys()[rocket_type])
 
 func _physics_process(delta):
+	elapsed_time += delta
+
+	# Safety: absolute max lifetime check even when not armed
+	if elapsed_time > MAX_LIFETIME:
+		cleanup()
+		return
+
 	if not is_armed:
 		return
 
@@ -256,7 +267,7 @@ func update_tracking_behavior(delta) -> Vector2:
 	"""Update tracking rocket behavior"""
 	tracking_timer += delta
 
-	if tracking_timer >= tracking_update_rate and player_reference:
+	if tracking_timer >= tracking_update_rate and is_instance_valid(player_reference):
 		tracking_timer = 0.0
 
 		# Calculate direction to player
@@ -330,7 +341,7 @@ func create_smoke_cloud(position: Vector2) -> Node2D:
 
 func check_proximity_to_player():
 	"""Check for near misses and proximity warnings"""
-	if not player_reference:
+	if not is_instance_valid(player_reference):
 		return
 
 	var distance = global_position.distance_to(player_reference.global_position)
@@ -345,6 +356,8 @@ func check_proximity_to_player():
 
 func _on_arm_timer():
 	"""Arm the rocket for collision detection"""
+	if not is_instance_valid(self):
+		return
 	is_armed = true
 
 	# Set up collision detection
@@ -409,7 +422,7 @@ func explode():
 	AudioManager.play_explosion()
 
 	# Screen shake for nearby explosions
-	if player_reference:
+	if is_instance_valid(player_reference):
 		var distance_to_player = global_position.distance_to(player_reference.global_position)
 		if distance_to_player < 200.0:
 			trigger_screen_shake(distance_to_player)
@@ -420,6 +433,8 @@ func explode():
 func create_cluster_rockets():
 	"""Create smaller rockets from cluster explosion"""
 	cluster_split_triggered = true
+	if not is_instance_valid(get_parent()):
+		return
 	var cluster_count = 3
 
 	for i in cluster_count:
@@ -461,7 +476,9 @@ func create_explosion_effect():
 func trigger_screen_shake(distance: float):
 	"""Trigger screen shake effect based on distance"""
 	var shake_strength = clamp(10.0 - (distance / 20.0), 2.0, 10.0)
-	# Would trigger screen shake here - implement in main scene
+	var main = get_tree().current_scene if get_tree() else null
+	if main and main.has_method("add_screen_shake"):
+		main.add_screen_shake(0.5, shake_strength)
 
 func cleanup():
 	"""Clean up rocket resources"""

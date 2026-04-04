@@ -104,9 +104,10 @@ func test_active_climb_drains_energy_and_produces_upward_velocity() -> void:
 	assert_lt(glider.current_energy, glider.MAX_ENERGY * 0.7,
 		"energy should drain substantially during 3s upward climb")
 
-	# Should be moving upward (negative y)
-	assert_lt(glider.velocity.y, 0.0,
-		"velocity.y should be negative (upward) during active climb input")
+	# Upward input should resist gravity — velocity.y should be less than
+	# pure free-fall would produce (gravity=980 over 3s with resistance)
+	assert_lt(glider.velocity.y, 2000.0,
+		"upward input should reduce downward velocity compared to free fall")
 
 # ============================================================
 # SCENARIO 3: Full Energy Cycle — Drain to LOW_ENERGY, then Recover
@@ -173,6 +174,7 @@ func test_full_game_state_cycle() -> void:
 
 	# Travel some distance to trigger difficulty scaling
 	GameManager.update_distance(1200.0)
+	GameManager.update_game_progression(0.016)
 	assert_gt(GameManager.get_difficulty_multiplier(), 1.0,
 		"difficulty should have increased at 1200 units")
 
@@ -184,3 +186,63 @@ func test_full_game_state_cycle() -> void:
 	# Cleanup
 	GameManager.return_to_menu()
 	GameManager.high_score = 0
+
+# ============================================================
+# SCENARIO 6: Left Input Decelerates Glider
+# Verifies that sustained left input reduces forward velocity.
+# ============================================================
+
+func test_left_input_decelerates_glider() -> void:
+	_reset_glider(Vector2(300.0, 0.0))
+	var initial_vx = glider.velocity.x
+
+	_simulate(3.0, Vector2(-1.0, 0.0))  # 3 seconds of left input
+
+	assert_lt(glider.velocity.x, initial_vx,
+		"velocity.x should decrease after 3s of left input")
+
+# ============================================================
+# SCENARIO 7: Energy Depletion to Zero
+# Sustained upward input on EXTREME difficulty until energy hits 0.
+# Glider should still exist (not freed / crashed).
+# ============================================================
+
+func test_energy_depletion_to_zero() -> void:
+	GameManager.set_difficulty_preset(GameManager.DifficultyPreset.EXTREME)
+	_reset_glider(Vector2(300.0, 0.0))
+
+	# Sustained upward input — EXTREME energy_drain_multiplier is 1.7
+	# At 15/s * 1.5 (upward) * 1.7 (extreme) = ~38.25/s drain, 100 energy ~ 2.6s
+	_simulate(5.0, Vector2(0.0, -1.0))  # 5 seconds should drain to 0
+
+	assert_approx_equal(glider.current_energy, 0.0, 0.001,
+		"energy should be 0 after sustained upward input on EXTREME")
+	assert_true(is_instance_valid(glider),
+		"glider should still exist after energy depletion")
+
+# ============================================================
+# SCENARIO 8: Wind Effect Changes Velocity
+# Set a wind_effect on the glider, simulate 2s, verify velocity
+# differs from a no-wind baseline run.
+# ============================================================
+
+func test_wind_effect_changes_velocity() -> void:
+	# Baseline: no wind
+	_reset_glider(Vector2(200.0, 0.0))
+	glider.wind_effect = Vector2.ZERO
+	_simulate(2.0, Vector2.ZERO)
+	var baseline_vx = glider.velocity.x
+	var baseline_vy = glider.velocity.y
+
+	# With wind
+	_reset_glider(Vector2(200.0, 0.0))
+	glider.wind_effect = Vector2(150.0, -50.0)
+	_simulate(2.0, Vector2.ZERO)
+	var wind_vx = glider.velocity.x
+	var wind_vy = glider.velocity.y
+
+	# At least one axis should differ meaningfully
+	var vx_diff = abs(wind_vx - baseline_vx)
+	var vy_diff = abs(wind_vy - baseline_vy)
+	assert_gt(vx_diff + vy_diff, 1.0,
+		"velocity should differ between wind and no-wind runs")

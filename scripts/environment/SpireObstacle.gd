@@ -36,6 +36,7 @@ var lean_angle: float = 0.0
 var crystal_pulse_speed: float = 3.0
 var has_wind_effect: bool = false
 var crystal_light: PointLight2D
+var _base_wind_particle_amount: int = 15  # Original particle count for reset
 
 func _ready():
 	creation_time = Time.get_ticks_msec() / 1000.0
@@ -414,10 +415,12 @@ func apply_proximity_effect(entering: bool):
 		var tween = create_tween()
 		tween.tween_property(main_spire, "modulate", target_modulate, 0.3)
 
-	# Special crystal effects
-	if spire_type == SpireType.CRYSTAL and entering:
-		if wind_particles:
+	# Special crystal effects — boost particles on enter, restore on exit
+	if spire_type == SpireType.CRYSTAL and wind_particles:
+		if entering:
 			wind_particles.amount = 25  # Increase particle count
+		else:
+			wind_particles.amount = _base_wind_particle_amount  # Restore original count
 
 # Strategic navigation features
 func get_safe_passage_points() -> Array[Vector2]:
@@ -444,6 +447,9 @@ func get_safe_passage_points() -> Array[Vector2]:
 			# Requires wider clearance
 			safe_points.append(global_position + Vector2(-width - 80, -height / 2.0))
 			safe_points.append(global_position + Vector2(width + 80, -height / 2.0))
+			# Middle passage point between spires if the cluster has gaps
+			if width > 30.0:
+				safe_points.append(global_position + Vector2(0, -height - 40))
 
 		SpireType.CRYSTAL:
 			# Crystal creates wind effects, need more clearance
@@ -496,12 +502,21 @@ func get_navigation_strategy() -> String:
 
 func cleanup():
 	"""Clean up spire resources"""
+	if not is_instance_valid(self):
+		return
+
 	if wind_particles:
 		wind_particles.emitting = false
 
 	var tween = create_tween()
-	tween.tween_property(self, "modulate", Color(1.0, 1.0, 1.0, 0.0), 0.8)
-	tween.tween_callback(queue_free)
+	if tween:
+		tween.tween_property(self, "modulate", Color(1.0, 1.0, 1.0, 0.0), 0.8)
+		tween.tween_callback(func():
+			if is_instance_valid(self):
+				queue_free()
+		)
+	else:
+		queue_free()
 
 func get_obstacle_info() -> Dictionary:
 	"""Get detailed obstacle information"""

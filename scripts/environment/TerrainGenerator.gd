@@ -51,6 +51,11 @@ func setup_noise():
 	terrain_noise.frequency = 0.01
 	terrain_noise.noise_type = FastNoiseLite.TYPE_PERLIN
 
+func set_noise_seed(seed_value: int):
+	"""Set a deterministic noise seed (useful for tests)"""
+	if terrain_noise:
+		terrain_noise.seed = seed_value
+
 func setup_pattern_templates():
 	"""Define pattern templates for obstacle generation"""
 	pattern_templates = [
@@ -140,6 +145,10 @@ func update_difficulty_for_position(position: float):
 	min_gap_size = max(100.0, 150.0 - gap_reduction * 50.0)
 	max_gap_size = max(min_gap_size + 50.0, 300.0 - gap_reduction * 100.0)
 
+	# Ensure min never exceeds max
+	if min_gap_size > max_gap_size:
+		min_gap_size = max_gap_size
+
 func generate_chunk_with_patterns(chunk_data: Dictionary):
 	"""Generate chunk using predefined patterns"""
 	var chunk_position = chunk_data.position
@@ -211,7 +220,7 @@ func generate_obstacles_from_pattern(pattern: Dictionary, base_x: float, chunk_d
 	"""Generate obstacles from a pattern template"""
 	for obstacle_data in pattern.obstacles:
 		var obstacle_x = base_x + obstacle_data.x
-		var obstacle_height = obstacle_data.height * difficulty_multiplier
+		var obstacle_height = min(obstacle_data.height * difficulty_multiplier, 800.0)
 		var obstacle_type = obstacle_data.type
 
 		# Create obstacle
@@ -240,7 +249,7 @@ func generate_chunk_procedurally(chunk_data: Dictionary):
 			# Determine height using noise
 			var height_noise = terrain_noise.get_noise_2d(current_x, 100)
 			var height_range = volcano_height_range if obstacle_type == "volcano" else spire_height_range
-			var obstacle_height = lerp(height_range.x, height_range.y, (height_noise + 1.0) / 2.0)
+			var obstacle_height = min(lerp(height_range.x, height_range.y, (height_noise + 1.0) / 2.0), 800.0)
 
 			# Create obstacle
 			var obstacle = create_obstacle(obstacle_type, Vector2(current_x, 540), obstacle_height)
@@ -288,7 +297,11 @@ func create_obstacle(type: String, position: Vector2, height: float) -> Node2D:
 			print("Unknown obstacle type: ", type)
 			return null
 
-	if obstacle and terrain_container:
+	if obstacle:
+		if not is_instance_valid(terrain_container):
+			push_warning("TerrainGenerator: terrain_container is null, cannot add obstacle")
+			obstacle.queue_free()
+			return null
 		terrain_container.add_child(obstacle)
 
 	return obstacle

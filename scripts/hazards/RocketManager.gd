@@ -166,7 +166,7 @@ func update_difficulty_scaling():
 
 func update_launcher_spawning():
 	"""Update spawning of new launchers"""
-	if not player_reference or not hazard_container:
+	if not is_instance_valid(player_reference) or not hazard_container:
 		return
 
 	player_position = player_reference.global_position
@@ -184,7 +184,7 @@ func should_spawn_launcher() -> bool:
 
 	# Check spawn rate
 	var spawn_chance = current_pattern.spawn_rate * current_difficulty
-	return randf() < spawn_chance / 60.0  # Per-frame probability
+	return randf() < spawn_chance * get_process_delta_time()  # Frame-rate independent probability
 
 func get_current_challenge_pattern() -> Dictionary:
 	"""Get the challenge pattern appropriate for current difficulty"""
@@ -235,8 +235,17 @@ func choose_launcher_config(pattern: Dictionary) -> Dictionary:
 	var launcher_configs = pattern.launchers
 	return launcher_configs[randi() % launcher_configs.size()]
 
+const MAX_ACTIVE_LAUNCHERS: int = 20
+
 func create_launcher(position: Vector2, config: Dictionary):
 	"""Create a rocket launcher at the specified position"""
+	if not launcher_prefab:
+		push_warning("RocketManager: launcher_prefab is null, cannot create launcher")
+		return
+
+	if active_launchers.size() >= MAX_ACTIVE_LAUNCHERS:
+		return
+
 	var launcher = launcher_prefab.instantiate()
 	launcher.global_position = position
 	launcher.launcher_type = config.type
@@ -258,6 +267,7 @@ func configure_launcher_for_difficulty(launcher: RocketLauncher, difficulty: flo
 	"""Configure launcher properties based on difficulty"""
 	# Reduce reload times
 	launcher.reload_time *= (2.0 - clamp(difficulty / 2.0, 0.0, 0.5))
+	launcher.reload_time = max(launcher.reload_time, 0.1)  # Prevent infinite fire rate
 
 	# Reduce warning times for higher difficulty, then apply preset multiplier
 	launcher.warning_time *= (2.0 - clamp(difficulty / 3.0, 0.0, 0.7))
@@ -423,6 +433,8 @@ func _on_difficulty_preset_changed(preset: int):
 
 func _on_rocket_launched(rocket: Rocket, launcher: RocketLauncher):
 	"""Handle rocket launch events"""
+	if not is_instance_valid(rocket):
+		return
 	rockets_fired += 1
 
 	# Connect to rocket signals

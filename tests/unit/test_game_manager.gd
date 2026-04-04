@@ -13,23 +13,28 @@ extends TestBase
 # ============================================================
 
 func setup() -> void:
-	# Reset to a known clean state before every test
-	GameManager.return_to_menu()
+	# Ensure configs are initialized (autoload _ready may not have fired)
+	if GameManager._difficulty_configs.is_empty():
+		GameManager._init_difficulty_configs()
+	if GameManager._animal_configs.is_empty():
+		GameManager._init_animal_configs()
+	# Reset to a known clean state — set fields directly to avoid
+	# state-transition guards and get_tree() issues in headless mode
+	GameManager.current_state = GameManager.GameState.MENU
 	GameManager.current_score = 0
 	GameManager.distance_traveled = 0.0
 	GameManager.current_difficulty = GameManager.base_difficulty
 	GameManager.high_score = 0
-	GameManager.set_difficulty_preset(GameManager.DifficultyPreset.NORMAL)
-	get_tree().paused = false
+	GameManager.is_game_active = false
+	GameManager.difficulty_preset = GameManager.DifficultyPreset.NORMAL
 
 func teardown() -> void:
-	# Same cleanup after every test to avoid state leakage
-	GameManager.return_to_menu()
+	GameManager.current_state = GameManager.GameState.MENU
 	GameManager.current_score = 0
 	GameManager.distance_traveled = 0.0
 	GameManager.high_score = 0
-	GameManager.set_difficulty_preset(GameManager.DifficultyPreset.NORMAL)
-	get_tree().paused = false
+	GameManager.is_game_active = false
+	GameManager.difficulty_preset = GameManager.DifficultyPreset.NORMAL
 
 # ============================================================
 # STATE MACHINE TESTS
@@ -121,6 +126,8 @@ func test_difficulty_increases_after_distance_interval() -> void:
 	var initial_difficulty = GameManager.get_difficulty_multiplier()
 	# Distance interval is 1000 units, so 1500 should trigger one increase
 	GameManager.update_distance(1500.0)
+	# Difficulty scaling now happens in update_game_progression()
+	GameManager.update_game_progression(0.016)
 	assert_gt(GameManager.get_difficulty_multiplier(), initial_difficulty,
 		"difficulty should increase after passing 1000 unit interval")
 
@@ -150,3 +157,87 @@ func test_high_score_updates_only_when_beaten() -> void:
 	GameManager.add_score(500)
 	GameManager.end_game()
 	assert_equal(GameManager.high_score, 500, "high score should update when beaten")
+
+# ============================================================
+# RETURN-TO-MENU RESET TESTS
+# ============================================================
+
+func test_return_to_menu_resets_score() -> void:
+	GameManager.start_new_game()
+	GameManager.add_score(100)
+	GameManager.return_to_menu()
+	assert_equal(GameManager.current_score, 0,
+		"score should be 0 after return_to_menu")
+
+func test_return_to_menu_resets_distance() -> void:
+	GameManager.start_new_game()
+	GameManager.update_distance(500.0)
+	GameManager.return_to_menu()
+	assert_approx_equal(GameManager.distance_traveled, 0.0, 0.001,
+		"distance should be 0.0 after return_to_menu")
+
+func test_return_to_menu_state_is_menu() -> void:
+	GameManager.start_new_game()
+	GameManager.return_to_menu()
+	assert_equal(GameManager.current_state, GameManager.GameState.MENU,
+		"state should be MENU after return_to_menu")
+
+# ============================================================
+# SCORE MULTIPLIER & EDGE CASE TESTS
+# ============================================================
+
+func test_score_multiplier_hard_preset() -> void:
+	GameManager.set_difficulty_preset(GameManager.DifficultyPreset.HARD)
+	assert_approx_equal(GameManager.get_score_multiplier(), 1.5, 0.001,
+		"HARD preset score multiplier should be 1.5")
+
+func test_add_negative_score_clamps_to_zero() -> void:
+	GameManager.start_new_game()
+	GameManager.add_score(10)
+	GameManager.add_score(-1000)
+	assert_gte(float(GameManager.current_score), 0.0,
+		"score should not go below zero after large negative add_score")
+
+# ============================================================
+# STATE TRANSITION GUARD TESTS
+# ============================================================
+
+func test_pause_when_not_playing_does_nothing() -> void:
+	# current_state is MENU from setup()
+	GameManager.pause_game()
+	assert_equal(GameManager.current_state, GameManager.GameState.MENU,
+		"pause_game should not change state when not PLAYING")
+
+func test_resume_when_not_paused_does_nothing() -> void:
+	GameManager.start_new_game()
+	# current_state is now PLAYING
+	GameManager.resume_game()
+	assert_equal(GameManager.current_state, GameManager.GameState.PLAYING,
+		"resume_game should not change state when not PAUSED")
+
+func test_invalid_state_transition_blocked() -> void:
+	# MENU -> GAME_OVER is not a valid transition
+	GameManager.change_state(GameManager.GameState.GAME_OVER)
+	assert_equal(GameManager.current_state, GameManager.GameState.MENU,
+		"direct MENU -> GAME_OVER transition should be blocked")
+
+func test_valid_state_transition_allowed() -> void:
+	# MENU -> PLAYING is valid
+	GameManager.change_state(GameManager.GameState.PLAYING)
+	assert_equal(GameManager.current_state, GameManager.GameState.PLAYING,
+		"MENU -> PLAYING transition should be allowed")
+
+# ============================================================
+# ANIMAL CONFIG FALLBACK TEST
+# ============================================================
+
+func test_get_animal_config_returns_default_when_empty() -> void:
+	# Save and clear configs
+	var saved_configs = GameManager._animal_configs.duplicate(true)
+	GameManager._animal_configs.clear()
+	# get_animal_config should return a fallback dict with "max_glide_speed"
+	var config = GameManager.get_animal_config()
+	assert_true(config.has("max_glide_speed"),
+		"fallback config should contain 'max_glide_speed' key")
+	# Restore configs
+	GameManager._animal_configs = saved_configs

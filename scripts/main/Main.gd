@@ -235,6 +235,16 @@ func setup_connections():
 
 	InputManager.game_action_triggered.connect(_on_game_action_triggered)
 
+func _exit_tree():
+	if GameManager.game_state_changed.is_connected(_on_game_state_changed):
+		GameManager.game_state_changed.disconnect(_on_game_state_changed)
+	if GameManager.score_updated.is_connected(_on_score_updated):
+		GameManager.score_updated.disconnect(_on_score_updated)
+	if GameManager.distance_updated.is_connected(_on_distance_updated):
+		GameManager.distance_updated.disconnect(_on_distance_updated)
+	if InputManager.game_action_triggered.is_connected(_on_game_action_triggered):
+		InputManager.game_action_triggered.disconnect(_on_game_action_triggered)
+
 func initialize_game():
 	"""Initialize the game session"""
 	camera_follow_speed = 2.0
@@ -356,17 +366,20 @@ func _on_distance_updated(new_distance: float):
 		distance_label.text = "Distance: " + str(int(new_distance)) + "m"
 
 func _on_energy_changed(new_energy: float, max_energy: float):
-	if energy_bar:
-		energy_bar.max_value = max_energy
-		energy_bar.value = new_energy
+	if not energy_bar:
+		return
+	energy_bar.max_value = max_energy
+	energy_bar.value = new_energy
 
-		var energy_percentage = new_energy / max_energy
-		if energy_percentage < 0.2:
-			energy_bar.modulate = Color.RED
-		elif energy_percentage < 0.5:
-			energy_bar.modulate = Color.YELLOW
-		else:
-			energy_bar.modulate = Color.GREEN
+	var energy_percentage = new_energy / max_energy if max_energy > 0.0 else 0.0
+	if energy_percentage < 0.2:
+		energy_bar.modulate = Color.RED
+	elif energy_percentage < 0.5:
+		var t = (energy_percentage - 0.2) / 0.3
+		energy_bar.modulate = Color.RED.lerp(Color.YELLOW, t)
+	else:
+		var t = (energy_percentage - 0.5) / 0.5
+		energy_bar.modulate = Color.YELLOW.lerp(Color.GREEN, t)
 
 func _on_collision_occurred(collision_body: Node):
 	print("Main: Collision with ", collision_body.name)
@@ -425,20 +438,23 @@ func _on_challenge_wave_started(wave_name: String, difficulty: float):
 	AudioManager.play_sfx("rocket_warning_intense", 1.0)
 
 func _on_rocket_barrage_incoming(launcher_count: int):
-	if obstacle_info_label:
-		obstacle_info_label.text = "ROCKET BARRAGE INCOMING!"
-		obstacle_info_label.modulate = Color.RED
+	if not obstacle_info_label:
+		return
+	obstacle_info_label.text = "ROCKET BARRAGE INCOMING!"
+	obstacle_info_label.modulate = Color.RED
 
-		var tween = create_tween()
-		tween.set_loops()
-		tween.tween_property(obstacle_info_label, "scale", Vector2(1.2, 1.2), 0.3)
-		tween.tween_property(obstacle_info_label, "scale", Vector2(1.0, 1.0), 0.3)
+	var tween = create_tween()
+	tween.set_loops()
+	tween.tween_property(obstacle_info_label, "scale", Vector2(1.2, 1.2), 0.3)
+	tween.tween_property(obstacle_info_label, "scale", Vector2(1.0, 1.0), 0.3)
 
-		get_tree().create_timer(4.0).timeout.connect(func():
+	get_tree().create_timer(4.0).timeout.connect(func():
+		if tween and tween.is_valid():
 			tween.kill()
+		if is_instance_valid(obstacle_info_label):
 			obstacle_info_label.modulate = Color.TRANSPARENT
 			obstacle_info_label.scale = Vector2.ONE
-		)
+	)
 
 func _on_all_clear_period(duration: float):
 	if hint_label:
@@ -452,12 +468,9 @@ func _on_all_clear_period(duration: float):
 func handle_game_over():
 	"""Handle game over — freeze camera then show difficulty menu"""
 	camera_follow_speed = 0.0
-
 	print("Game Over! Final Score: ", GameManager.get_current_score())
-
-	# Show animal menu after brief pause so player sees the moment
 	get_tree().create_timer(1.5).timeout.connect(func():
-		if animal_overlay:
+		if is_instance_valid(animal_overlay):
 			animal_overlay.show()
 	)
 
@@ -466,18 +479,21 @@ func add_screen_shake(duration: float, strength: float):
 	if not camera:
 		return
 
-	var tween = create_tween()
-	var original_position = camera.position
-
-	for i in range(int(duration * 60)):
-		var shake_offset = Vector2(
-			randf_range(-strength, strength),
-			randf_range(-strength, strength)
+	var shake_tween = create_tween()
+	var elapsed = 0.0
+	var step = 0.016
+	var steps = int(duration / step)
+	for i in steps:
+		var t = float(i) / steps  # 0→1 progress
+		var diminish = (1.0 - t) * strength
+		shake_tween.tween_callback(func():
+			camera.offset = Vector2(
+				randf_range(-diminish, diminish),
+				randf_range(-diminish, diminish)
+			)
 		)
-
-		tween.tween_property(camera, "position", original_position + shake_offset, 0.016)
-
-	tween.tween_property(camera, "position", original_position, 0.1)
+		shake_tween.tween_interval(step)
+	shake_tween.tween_callback(func(): camera.offset = Vector2.ZERO)
 
 # ── Intro screen ──────────────────────────────────────────────────────────
 
@@ -911,14 +927,20 @@ func _dismiss_intro():
 		return
 	intro_active = false
 
-	if intro_pulse_tween:
+	if intro_pulse_tween and intro_pulse_tween.is_valid():
 		intro_pulse_tween.kill()
 
-	# Fade out the panel (first child of the CanvasLayer)
-	var panel = intro_overlay.get_child(0)
-	var fade = create_tween()
-	fade.tween_property(panel, "modulate:a", 0.0, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	fade.tween_callback(func():
-		intro_overlay.hide()
-		animal_overlay.show()
-	)
+	if intro_overlay and intro_overlay.get_child_count() > 0:
+		var panel = intro_overlay.get_child(0)
+		var fade = create_tween()
+		fade.tween_property(panel, "modulate:a", 0.0, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		fade.tween_callback(func():
+			intro_overlay.hide()
+			if is_instance_valid(animal_overlay):
+				animal_overlay.show()
+		)
+	else:
+		if intro_overlay:
+			intro_overlay.hide()
+		if is_instance_valid(animal_overlay):
+			animal_overlay.show()

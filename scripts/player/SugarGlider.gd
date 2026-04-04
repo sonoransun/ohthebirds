@@ -7,6 +7,11 @@ signal position_changed(new_position: Vector2)
 signal collision_occurred(collision_body: Node)
 signal animation_state_changed(new_state: AnimationState)
 
+# Collision layer constants (must match scene configuration)
+const COLLISION_LAYER_OBSTACLE: int = 2
+const COLLISION_LAYER_ROCKET: int = 4
+const COLLISION_LAYER_BOUNDARY: int = 16
+
 # Animation states
 enum AnimationState {
 	IDLE_GLIDE,      # Neutral gliding pose
@@ -88,16 +93,24 @@ func _ready():
 
 	print("Sugar Glider initialized")
 
+func _exit_tree():
+	if InputManager.input_direction_changed.is_connected(_on_input_direction_changed):
+		InputManager.input_direction_changed.disconnect(_on_input_direction_changed)
+	if InputManager.input_active_changed.is_connected(_on_input_active_changed):
+		InputManager.input_active_changed.disconnect(_on_input_active_changed)
+
 func apply_animal_profile() -> void:
 	"""Apply the active GameManager animal config to physics vars."""
 	var cfg = GameManager.get_animal_config()
-	MAX_GLIDE_SPEED        = cfg.max_glide_speed
-	MIN_GLIDE_SPEED        = cfg.min_glide_speed
-	input_force            = cfg.input_force
-	AIR_RESISTANCE         = cfg.air_resistance
-	GLIDE_RESISTANCE       = cfg.glide_resistance
-	GLIDE_LIFT_COEFFICIENT = cfg.glide_lift_coefficient
-	MAX_FALL_SPEED         = cfg.max_fall_speed
+	if cfg == null or cfg.is_empty():
+		return  # Keep defaults when config is missing or empty
+	MAX_GLIDE_SPEED        = cfg.get("max_glide_speed", MAX_GLIDE_SPEED)
+	MIN_GLIDE_SPEED        = cfg.get("min_glide_speed", MIN_GLIDE_SPEED)
+	input_force            = cfg.get("input_force", input_force)
+	AIR_RESISTANCE         = cfg.get("air_resistance", AIR_RESISTANCE)
+	GLIDE_RESISTANCE       = cfg.get("glide_resistance", GLIDE_RESISTANCE)
+	GLIDE_LIFT_COEFFICIENT = cfg.get("glide_lift_coefficient", GLIDE_LIFT_COEFFICIENT)
+	MAX_FALL_SPEED         = cfg.get("max_fall_speed", MAX_FALL_SPEED)
 	velocity = Vector2(MIN_GLIDE_SPEED, 0)
 	current_energy = MAX_ENERGY
 
@@ -168,6 +181,9 @@ func calculate_glide_physics(delta):
 	if is_input_active and current_energy > 0:
 		apply_player_input(delta)
 
+	# Final velocity clamp to prevent any force from exceeding fall speed limits
+	velocity.y = clamp(velocity.y, -MAX_FALL_SPEED, MAX_FALL_SPEED)
+
 func is_gliding() -> bool:
 	"""Check if the glider is in gliding state"""
 	return velocity.x >= MIN_GLIDE_SPEED and abs(velocity.y) < velocity.x
@@ -224,11 +240,11 @@ func handle_collision(collision: KinematicCollision2D, previous_velocity: Vector
 
 	# Determine collision response based on object type
 	match collision_body.get_collision_layer():
-		2:  # Obstacles (volcanoes, spires)
+		COLLISION_LAYER_OBSTACLE:  # Obstacles (volcanoes, spires)
 			handle_obstacle_collision(collision, previous_velocity)
-		3:  # Rockets
+		COLLISION_LAYER_ROCKET:  # Rockets
 			handle_rocket_collision(collision_body)
-		5:  # Boundaries
+		COLLISION_LAYER_BOUNDARY:  # Boundaries
 			handle_boundary_collision(collision)
 
 func handle_obstacle_collision(collision: KinematicCollision2D, previous_velocity: Vector2):
@@ -239,6 +255,7 @@ func handle_obstacle_collision(collision: KinematicCollision2D, previous_velocit
 
 	# Energy penalty and temporary stun
 	current_energy -= 25.0
+	current_energy = max(current_energy, 0.0)
 	enter_stunned_state(1.0)  # 1 second stun
 
 	# Visual/audio feedback
@@ -261,7 +278,7 @@ func enter_stunned_state(duration: float):
 	"""Enter stunned state after collision"""
 	is_stunned = true
 	is_input_active = false
-	stun_timer = duration
+	stun_timer = max(duration, 0.0)
 	current_animation_state = AnimationState.STUNNED
 
 func handle_stun_state(delta):
@@ -419,7 +436,7 @@ func detect_nearby_rockets() -> bool:
 			var distance = global_position.distance_to(rocket.global_position)
 			if distance < danger_threshold:
 				# Check if rocket is heading towards player
-				var rocket_velocity = rocket.linear_velocity if rocket.has_method("linear_velocity") else Vector2.ZERO
+				var rocket_velocity = rocket.linear_velocity if "linear_velocity" in rocket else Vector2.ZERO
 				var to_player = (global_position - rocket.global_position).normalized()
 				var rocket_direction = rocket_velocity.normalized()
 

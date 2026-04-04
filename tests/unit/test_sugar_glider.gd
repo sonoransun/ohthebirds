@@ -164,3 +164,80 @@ func test_exit_evasion_mode_clears_flag() -> void:
 	glider.enter_evasion_mode()
 	glider.exit_evasion_mode()
 	assert_false(glider.evasion_mode, "evasion_mode should be false after exit")
+
+# ============================================================
+# STUN STATE EXTENDED TESTS
+# ============================================================
+
+func test_stun_timer_decrements() -> void:
+	glider.enter_stunned_state(1.0)
+	glider.handle_stun_state(0.5)
+	assert_lt(glider.stun_timer, 1.0,
+		"stun_timer should decrease after handle_stun_state")
+
+func test_stun_clears_after_duration() -> void:
+	glider.enter_stunned_state(0.1)
+	glider.handle_stun_state(0.2)
+	assert_false(glider.is_stunned,
+		"is_stunned should be false after stun_timer expires")
+
+# ============================================================
+# ENERGY AND FORCE EDGE CASE TESTS
+# ============================================================
+
+func test_energy_at_zero_halves_force() -> void:
+	glider.current_energy = 0.0
+	assert_true(glider.current_energy < glider.LOW_ENERGY_THRESHOLD,
+		"energy 0 should be below LOW_ENERGY_THRESHOLD so force is halved")
+
+func test_energy_clamp_at_zero() -> void:
+	glider.current_energy = -10.0
+	# Run update_energy with no input (regen path) to trigger clamp
+	_inject_input(Vector2.ZERO)
+	glider.update_energy(0.016)
+	assert_gte(glider.current_energy, 0.0,
+		"energy should be clamped to >= 0 after update_energy")
+
+# ============================================================
+# ENVIRONMENTAL EFFECTS TESTS
+# ============================================================
+
+func test_wind_effect_applied() -> void:
+	glider.wind_effect = Vector2(100.0, 0.0)
+	var vx_before = glider.velocity.x
+	glider.apply_environmental_effects(1.0 / 60.0)
+	assert_gt(glider.velocity.x, vx_before,
+		"velocity.x should increase when wind_effect pushes right")
+
+func test_thermal_sets_recovery_multiplier() -> void:
+	glider.in_thermal = true
+	glider.apply_environmental_effects(1.0 / 60.0)
+	assert_approx_equal(glider.energy_recovery_multiplier, 1.5, 0.001,
+		"energy_recovery_multiplier should be 1.5 when in thermal")
+
+func test_thermal_off_resets_recovery_multiplier() -> void:
+	glider.in_thermal = false
+	glider.apply_environmental_effects(1.0 / 60.0)
+	assert_approx_equal(glider.energy_recovery_multiplier, 1.0, 0.001,
+		"energy_recovery_multiplier should be 1.0 when not in thermal")
+
+# ============================================================
+# COLLISION LAYER CONSTANTS TEST
+# ============================================================
+
+func test_collision_layer_constants_defined() -> void:
+	assert_equal(glider.COLLISION_LAYER_OBSTACLE, 2,
+		"COLLISION_LAYER_OBSTACLE should be 2")
+	assert_equal(glider.COLLISION_LAYER_ROCKET, 4,
+		"COLLISION_LAYER_ROCKET should be 4")
+	assert_equal(glider.COLLISION_LAYER_BOUNDARY, 16,
+		"COLLISION_LAYER_BOUNDARY should be 16")
+
+# ============================================================
+# EVASION MODE EXTENDED TESTS
+# ============================================================
+
+func test_evasion_mode_timer_set() -> void:
+	glider.enter_evasion_mode()
+	assert_gt(glider.evasion_timer, 0.0,
+		"evasion_timer should be > 0 after entering evasion mode")

@@ -20,6 +20,7 @@ var touch_active: bool = false
 var touch_start_position: Vector2 = Vector2.ZERO
 var touch_current_position: Vector2 = Vector2.ZERO
 var mouse_active: bool = false
+var touch_drag_threshold: float = 50.0
 
 # Platform-specific settings
 var is_mobile: bool = false
@@ -37,10 +38,12 @@ func _process(delta):
 	process_keyboard_input()
 	# Continuously update mouse direction while button is held (don't rely on motion events alone)
 	if mouse_active and is_desktop:
-		var mouse_pos = get_viewport().get_mouse_position()
-		var screen_center = get_viewport().get_visible_rect().size / 2.0
-		var direction = (mouse_pos - screen_center).normalized()
-		set_input_direction(direction * input_sensitivity, true)
+		var viewport = get_viewport()
+		if viewport:
+			var mouse_pos = viewport.get_mouse_position()
+			var screen_center = viewport.get_visible_rect().size / 2.0
+			var direction = (mouse_pos - screen_center).normalized()
+			set_input_direction(direction * input_sensitivity, true)
 
 func setup_platform_specific():
 	"""Configure input settings based on platform"""
@@ -116,10 +119,12 @@ func handle_mouse_input(event: InputEventMouseButton):
 	if event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			mouse_active = true
-			var mouse_pos = get_viewport().get_mouse_position()
-			var screen_center = get_viewport().get_visible_rect().size / 2.0
-			var direction = (mouse_pos - screen_center).normalized()
-			set_input_direction(direction * input_sensitivity, true)
+			var viewport = get_viewport()
+			if viewport:
+				var mouse_pos = viewport.get_mouse_position()
+				var screen_center = viewport.get_visible_rect().size / 2.0
+				var direction = (mouse_pos - screen_center).normalized()
+				set_input_direction(direction * input_sensitivity, true)
 		else:
 			mouse_active = false
 			if not Input.is_anything_pressed():
@@ -130,7 +135,10 @@ func handle_mouse_motion(event: InputEventMouseMotion):
 	if not is_desktop or not mouse_active:
 		return
 
-	var screen_center = get_viewport().get_visible_rect().size / 2.0
+	var viewport = get_viewport()
+	if not viewport:
+		return
+	var screen_center = viewport.get_visible_rect().size / 2.0
 	var direction = (event.position - screen_center).normalized()
 	set_input_direction(direction * input_sensitivity, true)
 
@@ -150,7 +158,7 @@ func update_touch_direction():
 	var touch_delta = touch_current_position - touch_start_position
 	var touch_distance = touch_delta.length()
 
-	if touch_distance > 50.0:  # Minimum distance for directional input
+	if touch_distance > touch_drag_threshold:  # Minimum distance for directional input
 		var direction = touch_delta.normalized() * input_sensitivity
 		set_input_direction(direction, true)
 	else:
@@ -173,7 +181,8 @@ func update_input_smoothing(delta):
 	"""Apply smoothing to input direction and emit smoothed value"""
 	var previous_direction = input_direction
 	if input_smoothing > 0.0:
-		input_direction = input_direction.lerp(raw_input_direction, delta / input_smoothing)
+		var lerp_factor = clamp(delta / input_smoothing, 0.0, 1.0)
+		input_direction = input_direction.lerp(raw_input_direction, lerp_factor)
 	else:
 		input_direction = raw_input_direction
 
@@ -200,6 +209,16 @@ func set_input_sensitivity(sensitivity: float):
 func set_input_smoothing(smoothing: float):
 	"""Set input smoothing amount"""
 	input_smoothing = clamp(smoothing, 0.0, 1.0)
+
+func reset_input_state():
+	"""Reset all input state cleanly (useful for game restart / state transitions)"""
+	input_direction = Vector2.ZERO
+	raw_input_direction = Vector2.ZERO
+	_is_input_active = false
+	touch_active = false
+	mouse_active = false
+	emit_signal("input_direction_changed", input_direction)
+	emit_signal("input_active_changed", _is_input_active)
 
 func get_input_strength() -> float:
 	"""Get the strength/magnitude of current input"""

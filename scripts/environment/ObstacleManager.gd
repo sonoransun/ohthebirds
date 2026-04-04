@@ -63,7 +63,7 @@ func setup_connections():
 
 func update_obstacle_tracking():
 	"""Update tracking of active and upcoming obstacles"""
-	if not player:
+	if not is_instance_valid(player):
 		return
 
 	var player_x = player.global_position.x
@@ -198,6 +198,8 @@ func generate_navigation_hints():
 		return
 
 	var next_obstacle = upcoming_obstacles[0]
+	if not is_instance_valid(player):
+		return
 	var distance_to_obstacle = next_obstacle.global_position.distance_to(player.global_position)
 
 	# Only give hints for reasonably close obstacles
@@ -216,7 +218,8 @@ func generate_hint_for_obstacle(obstacle: Node2D) -> String:
 	elif obstacle is SpireObstacle:
 		return generate_spire_hint(obstacle)
 
-	return ""
+	# Fallback for unknown obstacle types
+	return "OBSTACLE AHEAD"
 
 func generate_volcano_hint(volcano: VolcanoObstacle) -> String:
 	"""Generate hint for volcano navigation"""
@@ -230,7 +233,7 @@ func generate_volcano_hint(volcano: VolcanoObstacle) -> String:
 		hints.append("Wide volcano - plan your route early")
 
 	# Consider player's energy level
-	if player and player.is_low_energy():
+	if is_instance_valid(player) and player.is_low_energy():
 		hints.append("Low energy - choose efficient path")
 
 	return hints[0] if not hints.is_empty() else ""
@@ -255,7 +258,7 @@ func generate_spire_hint(spire: SpireObstacle) -> String:
 func calculate_optimal_path(target_distance: float) -> Array[Vector2]:
 	"""Calculate optimal navigation path through upcoming obstacles"""
 	var safe_points = []
-	var current_pos = player.global_position if player else Vector2.ZERO
+	var current_pos = player.global_position if is_instance_valid(player) else Vector2.ZERO
 
 	# Get safe passage points from upcoming obstacles
 	for obstacle in upcoming_obstacles:
@@ -294,7 +297,7 @@ func optimize_navigation_path(safe_points: Array[Vector2], start_pos: Vector2) -
 
 func update_player_skill_assessment(delta: float):
 	"""Update assessment of player skill for adaptive difficulty"""
-	if not player:
+	if not is_instance_valid(player):
 		return
 
 	# Track various skill metrics

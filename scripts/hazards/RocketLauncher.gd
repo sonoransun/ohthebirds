@@ -244,9 +244,12 @@ func configure_launcher_type():
 			warning_time = 5.0
 			detection_range = 600.0
 
+	# Guard reload_time against zero/negative values after all configuration
+	reload_time = max(reload_time, 0.1)
+
 func update_targeting(delta):
 	"""Update targeting system"""
-	if not player_reference:
+	if not is_instance_valid(player_reference):
 		return
 
 	var distance_to_player = global_position.distance_to(player_reference.global_position)
@@ -288,7 +291,7 @@ func update_warning_state(delta):
 	if is_reloading:
 		return
 
-	var distance_to_player = global_position.distance_to(player_reference.global_position) if player_reference else 1000.0
+	var distance_to_player = global_position.distance_to(player_reference.global_position) if is_instance_valid(player_reference) else 1000.0
 
 	# Check if we should start warning
 	if not is_warning and should_start_warning(distance_to_player):
@@ -393,6 +396,11 @@ func calculate_launch_angles():
 			launch_angles.append(angle_to_predicted)
 
 		LaunchPattern.SPRAY_PATTERN:
+			# Set a valid target position for spray pattern
+			if is_instance_valid(player_reference):
+				current_target_position = player_reference.global_position
+			elif current_target_position == Vector2.ZERO:
+				current_target_position = global_position + Vector2(0, -500)  # Default upward
 			var base_angle = -PI / 2.0
 			var spread = PI / 3.0
 			for i in rockets_per_salvo:

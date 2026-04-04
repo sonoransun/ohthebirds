@@ -36,6 +36,7 @@ var start_position: float = 0.0
 var wind_strength: float = 0.0
 var wind_direction: Vector2 = Vector2.ZERO
 var thermal_zones: Array[Rect2] = []
+var _thermal_zones_generated_for_chunk: int = -999999  # Track which chunk thermals were generated for
 
 # References
 var terrain_generator: TerrainGenerator
@@ -118,7 +119,7 @@ func setup_connections():
 		if game_world_node:
 			player = game_world_node.get_node_or_null("PlayArea/SugarGlider")
 
-	if player:
+	if is_instance_valid(player) and player.has_signal("position_changed"):
 		player.position_changed.connect(_on_player_position_changed)
 		print("Connected to player")
 
@@ -232,8 +233,12 @@ func update_environmental_effects(delta):
 	apply_environmental_effects_to_player()
 
 func update_thermal_zones():
-	"""Update thermal updraft zones"""
-	# Simple thermal generation - create thermal zones periodically
+	"""Update thermal updraft zones — only regenerate when the camera enters a new chunk"""
+	var current_chunk = int(camera_position.x / chunk_width)
+	if current_chunk == _thermal_zones_generated_for_chunk:
+		return  # Thermals already generated for this chunk; skip redundant work
+
+	_thermal_zones_generated_for_chunk = current_chunk
 	thermal_zones.clear()
 
 	var thermal_spacing = 800.0
@@ -250,7 +255,7 @@ func update_thermal_zones():
 func apply_environmental_effects_to_player():
 	"""Apply wind and thermal effects to the player"""
 	var player = get_tree().get_first_node_in_group("player")
-	if not player or not player.has_method("set_wind_effect"):
+	if not is_instance_valid(player) or not player.has_method("set_wind_effect"):
 		return
 
 	# Apply wind effect
@@ -258,12 +263,14 @@ func apply_environmental_effects_to_player():
 
 	# Check if player is in thermal zone
 	var in_thermal = false
-	for thermal in thermal_zones:
-		if thermal.has_point(player.global_position):
-			in_thermal = true
-			break
+	if is_instance_valid(player):
+		for thermal in thermal_zones:
+			if thermal.has_point(player.global_position):
+				in_thermal = true
+				break
 
-	player.set_in_thermal(in_thermal)
+	if player.has_method("set_in_thermal"):
+		player.set_in_thermal(in_thermal)
 
 # Signal handlers
 func _on_game_state_changed(new_state):

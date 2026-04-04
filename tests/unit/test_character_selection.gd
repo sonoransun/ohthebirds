@@ -179,3 +179,40 @@ func test_falcon_input_force_below_sugar_glider() -> void:
 	var falcon_force = 300.0
 	var sg_force     = 450.0
 	assert_lt(falcon_force, sg_force)
+
+# ── display name tests ────────────────────────────────────────────────────
+
+func test_get_animal_display_name_sparrow() -> void:
+	GameManager.set_animal(GameManager.AnimalType.SPARROW)
+	assert_equal(GameManager.get_animal_display_name(), "Sparrow",
+		"Sparrow display name should be 'Sparrow'")
+
+func test_get_animal_display_name_falcon() -> void:
+	GameManager.set_animal(GameManager.AnimalType.FALCON)
+	assert_equal(GameManager.get_animal_display_name(), "Falcon",
+		"Falcon display name should be 'Falcon'")
+
+# ── multiple profile switches ─────────────────────────────────────────────
+
+func test_multiple_profile_switches() -> void:
+	# sugar_glider -> sparrow -> falcon -> sugar_glider
+	GameManager.set_animal(GameManager.AnimalType.SUGAR_GLIDER)
+	GameManager.set_animal(GameManager.AnimalType.SPARROW)
+	GameManager.set_animal(GameManager.AnimalType.FALCON)
+	GameManager.set_animal(GameManager.AnimalType.SUGAR_GLIDER)
+	glider.apply_animal_profile()
+	# Final config should match sugar glider
+	assert_approx_equal(glider.MAX_GLIDE_SPEED, 600.0, TOLERANCE,
+		"after cycling back to Sugar Glider, MAX_GLIDE_SPEED should be 600")
+	assert_approx_equal(glider.input_force, 450.0, TOLERANCE,
+		"after cycling back to Sugar Glider, input_force should be 450")
+
+# ── apply_animal_profile and evasion mode ─────────────────────────────────
+
+func test_apply_profile_clears_evasion() -> void:
+	# apply_animal_profile does NOT reset evasion_mode — it only sets
+	# physics vars, velocity, and energy. So evasion_mode stays true.
+	glider.evasion_mode = true
+	glider.apply_animal_profile()
+	assert_true(glider.evasion_mode,
+		"apply_animal_profile should not reset evasion_mode")

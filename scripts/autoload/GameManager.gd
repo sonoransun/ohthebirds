@@ -163,32 +163,53 @@ func set_animal(animal_type: int) -> void:
 	print("Animal selected: ", AnimalType.keys()[selected_animal])
 
 func get_animal_config() -> Dictionary:
+	if _animal_configs.is_empty() or selected_animal < 0 or selected_animal >= _animal_configs.size():
+		print("Warning: Invalid animal config access, returning default")
+		return {
+			"display_name": "Sugar Glider",
+			"description": "Balanced speed and agility",
+			"max_glide_speed": 600.0,
+			"min_glide_speed": 100.0,
+			"input_force": 450.0,
+			"air_resistance": 0.98,
+			"glide_resistance": 0.995,
+			"glide_lift_coefficient": 0.3,
+			"max_fall_speed": 800.0,
+		}
 	return _animal_configs[selected_animal]
 
 func get_animal_display_name() -> String:
-	return _animal_configs[selected_animal].display_name
+	return get_animal_config().display_name
 
 func set_difficulty_preset(preset: int) -> void:
 	"""Set the difficulty preset and apply its base configuration"""
 	difficulty_preset = clamp(preset, 0, DifficultyPreset.EXTREME)
-	base_difficulty = _difficulty_configs[difficulty_preset].base_difficulty
+	if not _difficulty_configs.is_empty() and difficulty_preset < _difficulty_configs.size():
+		base_difficulty = _difficulty_configs[difficulty_preset].base_difficulty
 	emit_signal("difficulty_preset_changed", difficulty_preset)
 	print("Difficulty preset set to: ", DifficultyPreset.keys()[difficulty_preset])
 
+func _get_difficulty_config_value(key: String, default_value: float = 1.0) -> float:
+	"""Safely retrieve a value from the active difficulty config"""
+	if _difficulty_configs.is_empty() or difficulty_preset < 0 or difficulty_preset >= _difficulty_configs.size():
+		print("Warning: Invalid difficulty config access for '", key, "', returning ", default_value)
+		return default_value
+	return _difficulty_configs[difficulty_preset].get(key, default_value)
+
 func get_scroll_speed_multiplier() -> float:
-	return _difficulty_configs[difficulty_preset].scroll_speed_multiplier
+	return _get_difficulty_config_value("scroll_speed_multiplier", 1.0)
 
 func get_energy_drain_multiplier() -> float:
-	return _difficulty_configs[difficulty_preset].energy_drain_multiplier
+	return _get_difficulty_config_value("energy_drain_multiplier", 1.0)
 
 func get_rocket_base_difficulty() -> float:
-	return _difficulty_configs[difficulty_preset].rocket_base_difficulty
+	return _get_difficulty_config_value("rocket_base_difficulty", 1.0)
 
 func get_warning_time_multiplier() -> float:
-	return _difficulty_configs[difficulty_preset].warning_time_multiplier
+	return _get_difficulty_config_value("warning_time_multiplier", 1.0)
 
 func get_score_multiplier() -> float:
-	return _difficulty_configs[difficulty_preset].score_multiplier
+	return _get_difficulty_config_value("score_multiplier", 1.0)
 
 func detect_platform() -> void:
 	if OS.get_name() == "Windows":
@@ -206,7 +227,8 @@ func start_new_game() -> void:
 
 	current_score = 0
 	distance_traveled = 0.0
-	base_difficulty = _difficulty_configs[difficulty_preset].base_difficulty
+	if not _difficulty_configs.is_empty() and difficulty_preset < _difficulty_configs.size():
+		base_difficulty = _difficulty_configs[difficulty_preset].base_difficulty
 	current_difficulty = base_difficulty
 	is_game_active = true
 	games_played += 1
@@ -221,14 +243,16 @@ func pause_game() -> void:
 	"""Pause the current game"""
 	if current_state == GameState.PLAYING:
 		change_state(GameState.PAUSED)
-		get_tree().paused = true
+		if is_inside_tree():
+			get_tree().paused = true
 		print("Game paused")
 
 func resume_game() -> void:
 	"""Resume from pause"""
 	if current_state == GameState.PAUSED:
 		change_state(GameState.PLAYING)
-		get_tree().paused = false
+		if is_inside_tree():
+			get_tree().paused = false
 		print("Game resumed")
 
 func end_game() -> void:
@@ -236,7 +260,8 @@ func end_game() -> void:
 	print("Game ended - Score: ", current_score, " Distance: ", distance_traveled)
 
 	is_game_active = false
-	get_tree().paused = false
+	if is_inside_tree():
+		get_tree().paused = false
 
 	# Update high score
 	if current_score > high_score:
@@ -254,13 +279,37 @@ func restart_game() -> void:
 func return_to_menu() -> void:
 	"""Return to the main menu"""
 	is_game_active = false
-	get_tree().paused = false
+	if is_inside_tree():
+		get_tree().paused = false
+	current_score = 0
+	distance_traveled = 0.0
+	current_difficulty = base_difficulty
 	change_state(GameState.MENU)
 	print("Returned to menu")
+
+func _is_valid_transition(from_state: GameState, to_state: GameState) -> bool:
+	"""Check whether a state transition is allowed"""
+	match from_state:
+		GameState.MENU:
+			return to_state in [GameState.PLAYING, GameState.TRANSITIONING]
+		GameState.PLAYING:
+			return to_state in [GameState.PLAYING, GameState.PAUSED, GameState.GAME_OVER, GameState.MENU]
+		GameState.PAUSED:
+			return to_state in [GameState.PLAYING, GameState.MENU]
+		GameState.GAME_OVER:
+			return to_state in [GameState.PLAYING, GameState.MENU, GameState.TRANSITIONING]
+		GameState.TRANSITIONING:
+			return to_state in [GameState.MENU, GameState.PLAYING]
+	return false
 
 func change_state(new_state: GameState) -> void:
 	"""Change the game state and emit signal"""
 	var old_state = current_state
+
+	if not _is_valid_transition(old_state, new_state):
+		print("Warning: Invalid state transition from ", GameState.keys()[old_state], " to ", GameState.keys()[new_state], " — ignoring")
+		return
+
 	current_state = new_state
 
 	print("Game state changed: ", GameState.keys()[old_state], " -> ", GameState.keys()[new_state])
@@ -270,6 +319,8 @@ func add_score(points: int) -> void:
 	"""Add points scaled by the active difficulty preset's score multiplier"""
 	var scaled_points = int(points * get_score_multiplier())
 	current_score += scaled_points
+	if current_score < 0:
+		current_score = 0
 	emit_signal("score_updated", current_score)
 
 func update_distance(new_distance: float) -> void:
@@ -277,20 +328,18 @@ func update_distance(new_distance: float) -> void:
 	distance_traveled = new_distance
 	emit_signal("distance_updated", distance_traveled)
 
-	# Check for difficulty scaling
+func update_game_progression(delta: float) -> void:
+	"""Update game progression during gameplay — distance-based difficulty scaling"""
+	if not is_game_active:
+		return
+
+	# Scale difficulty based on distance traveled
 	var difficulty_level = floor(distance_traveled / difficulty_distance_interval)
 	var new_difficulty = base_difficulty + (difficulty_level * difficulty_increase_rate)
 
 	if new_difficulty != current_difficulty:
 		current_difficulty = new_difficulty
 		emit_signal("difficulty_changed", current_difficulty)
-
-func update_game_progression(delta: float) -> void:
-	"""Update game progression during gameplay"""
-	if not is_game_active:
-		return
-
-	# Distance calculation happens in the scrolling manager
 
 func get_game_data() -> Dictionary:
 	"""Get current game data for saving"""
@@ -339,6 +388,12 @@ func load_game_data() -> void:
 			game_speed_multiplier = save_data.get("game_speed_multiplier", 1.0)
 			difficulty_preset = save_data.get("difficulty_preset", DifficultyPreset.NORMAL)
 			selected_animal = save_data.get("selected_animal", AnimalType.SUGAR_GLIDER)
+
+			# Validate and clamp to valid ranges
+			high_score = max(0, high_score)
+			games_played = max(0, games_played)
+			difficulty_preset = clampi(difficulty_preset, 0, DifficultyPreset.EXTREME)
+			selected_animal = clampi(selected_animal, 0, AnimalType.FALCON)
 
 			print("Game data loaded - High Score: ", high_score)
 		else:
