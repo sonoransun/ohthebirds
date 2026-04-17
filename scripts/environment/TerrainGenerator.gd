@@ -386,20 +386,22 @@ func _on_volcano_passed(volcano: VolcanoObstacle):
 	"""Handle volcano being successfully passed"""
 	print("Volcano passed! Difficulty: ", volcano.get_difficulty_rating())
 
-	# Bonus score for difficult volcanoes
-	if volcano.has_lava_flow:
-		GameManager.add_score(5)  # Bonus for lava volcano
+	# Base pass scores 3 points, lava flows score 5 — routed through the combo system
+	# so chained passes multiply and a single collision resets the streak.
+	var base_points := 5 if volcano.has_lava_flow else 3
+	GameManager.register_obstacle_pass(base_points)
 
 func _on_spire_passed(spire: SpireObstacle):
 	"""Handle spire being successfully passed"""
 	print("Spire passed! Type: ", SpireObstacle.SpireType.keys()[spire.spire_type])
 
-	# Bonus based on spire complexity
+	var base_points := 3
 	match spire.spire_type:
 		SpireObstacle.SpireType.CRYSTAL:
-			GameManager.add_score(10)  # Big bonus for crystal spires
+			base_points = 10  # Big bonus for crystal spires
 		SpireObstacle.SpireType.CLUSTER:
-			GameManager.add_score(5)   # Bonus for cluster navigation
+			base_points = 5   # Bonus for cluster navigation
+	GameManager.register_obstacle_pass(base_points)
 
 func _on_obstacle_approached(obstacle: Node, distance: float):
 	"""Handle player approaching any obstacle"""

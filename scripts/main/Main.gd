@@ -42,12 +42,23 @@ var intro_overlay: CanvasLayer
 var intro_active: bool = true
 var intro_pulse_tween: Tween
 
+# Combo HUD + game-over stats overlay (built in code, lazily)
+var combo_label: Label
+var milestone_flash: ColorRect
+var stats_overlay: CanvasLayer
+var stats_title: Label
+var stats_body: Label
+var stats_record_label: Label
+
 func _ready():
 	_initialize_visual_environment()
 	setup_connections()
 	_create_intro_screen()
 	_create_animal_menu()
 	_create_difficulty_menu()
+	_create_combo_hud()
+	_create_milestone_flash()
+	_create_stats_overlay()
 	# Hide selection menus until intro is dismissed
 	animal_overlay.hide()
 	difficulty_overlay.hide()
@@ -194,7 +205,7 @@ func _create_difficulty_menu():
 	var difficulty_data = [
 		{"label": "EASY      [0.75x score]",   "color": Color(0.3, 0.9, 0.3),   "preset": GameManager.DifficultyPreset.EASY},
 		{"label": "NORMAL    [1.0x score]",    "color": Color(0.9, 0.9, 0.9),   "preset": GameManager.DifficultyPreset.NORMAL},
-		{"label": "HARD      [1.5x score]",    "color": Color(1.0, 0.55, 0.1),  "preset": GameManager.DifficultyPreset.HARD},
+		{"label": "HARD      [1.75x score]",   "color": Color(1.0, 0.55, 0.1),  "preset": GameManager.DifficultyPreset.HARD},
 		{"label": "EXTREME   [2.5x score]",    "color": Color(1.0, 0.2, 0.2),   "preset": GameManager.DifficultyPreset.EXTREME}
 	]
 
@@ -219,6 +230,8 @@ func setup_connections():
 	GameManager.game_state_changed.connect(_on_game_state_changed)
 	GameManager.score_updated.connect(_on_score_updated)
 	GameManager.distance_updated.connect(_on_distance_updated)
+	GameManager.combo_changed.connect(_on_combo_changed)
+	GameManager.milestone_reached.connect(_on_milestone_reached)
 
 	if sugar_glider:
 		sugar_glider.energy_changed.connect(_on_energy_changed)
@@ -351,7 +364,12 @@ func _on_game_state_changed(new_state):
 
 	match new_state:
 		GameManager.GameState.PLAYING:
-			pass
+			# Reset rocket-session counters so the stats screen reflects this run only
+			if rocket_manager:
+				rocket_manager.rockets_fired = 0
+				rocket_manager.near_misses = 0
+			if is_instance_valid(stats_overlay):
+				stats_overlay.hide()
 		GameManager.GameState.PAUSED:
 			pass
 		GameManager.GameState.GAME_OVER:
@@ -386,6 +404,9 @@ func _on_collision_occurred(collision_body: Node):
 
 	if collision_body.get_collision_layer() == 2:
 		add_screen_shake(0.3, 5.0)
+
+	# Any collision breaks the combo streak
+	GameManager.reset_combo()
 
 func _on_game_action_triggered(action: String):
 	match action:
@@ -466,13 +487,209 @@ func _on_all_clear_period(duration: float):
 		tween.tween_property(hint_label, "modulate", Color.TRANSPARENT, 1.0)
 
 func handle_game_over():
-	"""Handle game over — freeze camera then show difficulty menu"""
+	"""Handle game over — freeze camera, then slide in the stats overlay"""
 	camera_follow_speed = 0.0
 	print("Game Over! Final Score: ", GameManager.get_current_score())
 	get_tree().create_timer(1.5).timeout.connect(func():
-		if is_instance_valid(animal_overlay):
-			animal_overlay.show()
+		if is_instance_valid(stats_overlay):
+			_show_stats_overlay()
 	)
+
+# ── Combo HUD ────────────────────────────────────────────────────────────
+
+func _create_combo_hud():
+	"""Top-center combo indicator — hidden while combo is 0."""
+	var ui = get_node_or_null("UI")
+	if not ui:
+		return
+	combo_label = Label.new()
+	combo_label.name = "ComboLabel"
+	combo_label.text = ""
+	combo_label.modulate = Color.TRANSPARENT
+	combo_label.add_theme_font_size_override("font_size", 40)
+	combo_label.add_theme_color_override("font_color", Color(1.0, 0.75, 0.2))
+	combo_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	combo_label.add_theme_constant_override("outline_size", 6)
+	combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	combo_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	combo_label.offset_left = -260
+	combo_label.offset_right = 260
+	combo_label.offset_top = 90
+	combo_label.offset_bottom = 160
+	ui.add_child(combo_label)
+
+func _on_combo_changed(count: int, multiplier: float):
+	if not is_instance_valid(combo_label):
+		return
+	if count <= 1:
+		# Fade out — a 0 or fresh 1 doesn't warrant fanfare
+		var t = create_tween()
+		t.tween_property(combo_label, "modulate", Color.TRANSPARENT, 0.25)
+		return
+	combo_label.text = "COMBO x%d   (%.2fx score)" % [count, multiplier]
+	combo_label.scale = Vector2(1.25, 1.25)
+	combo_label.modulate = Color(1, 1, 1, 1)
+	var t = create_tween()
+	t.tween_property(combo_label, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+# ── Milestone flash ──────────────────────────────────────────────────────
+
+func _create_milestone_flash():
+	"""Full-screen ColorRect used for milestone celebration flashes."""
+	var ui = get_node_or_null("UI")
+	if not ui:
+		return
+	milestone_flash = ColorRect.new()
+	milestone_flash.name = "MilestoneFlash"
+	milestone_flash.color = Color(1, 0.8, 0.3, 0)
+	milestone_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	milestone_flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui.add_child(milestone_flash)
+
+func _on_milestone_reached(distance: int, bonus: int):
+	"""Celebrate distance milestones with a flash, shake, and hint."""
+	add_screen_shake(0.4, 6.0)
+	if is_instance_valid(milestone_flash):
+		milestone_flash.color = Color(1, 0.8, 0.3, 0.45)
+		var t = create_tween()
+		t.tween_property(milestone_flash, "color", Color(1, 0.8, 0.3, 0), 0.6)
+	if hint_label:
+		hint_label.text = "%dm REACHED — +%d BONUS!" % [distance, bonus]
+		hint_label.modulate = Color(1, 0.85, 0.3)
+		var t2 = create_tween()
+		t2.tween_delay(2.0)
+		t2.tween_property(hint_label, "modulate", Color.TRANSPARENT, 1.0)
+
+# ── Game-over stats overlay ──────────────────────────────────────────────
+
+func _create_stats_overlay():
+	"""Build the game-over stats screen (score breakdown + play-again)."""
+	stats_overlay = CanvasLayer.new()
+	stats_overlay.layer = 13
+	add_child(stats_overlay)
+
+	var panel = Panel.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.04, 0.01, 0.01, 0.92)
+	panel.add_theme_stylebox_override("panel", style)
+	stats_overlay.add_child(panel)
+
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	vbox.custom_minimum_size = Vector2(820, 640)
+	vbox.offset_left = -410
+	vbox.offset_top = -320
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 18)
+	panel.add_child(vbox)
+
+	stats_title = Label.new()
+	stats_title.text = "RUN ENDED"
+	stats_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stats_title.add_theme_font_size_override("font_size", 64)
+	stats_title.add_theme_color_override("font_color", Color(1.0, 0.65, 0.2))
+	vbox.add_child(stats_title)
+
+	stats_record_label = Label.new()
+	stats_record_label.text = ""
+	stats_record_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stats_record_label.add_theme_font_size_override("font_size", 30)
+	stats_record_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.3))
+	vbox.add_child(stats_record_label)
+
+	stats_body = Label.new()
+	stats_body.text = ""
+	stats_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stats_body.add_theme_font_size_override("font_size", 26)
+	stats_body.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+	vbox.add_child(stats_body)
+
+	var spacer = Control.new()
+	spacer.custom_minimum_size = Vector2(0, 20)
+	vbox.add_child(spacer)
+
+	var hbox = HBoxContainer.new()
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_theme_constant_override("separation", 24)
+	vbox.add_child(hbox)
+
+	var play_again = Button.new()
+	play_again.text = "PLAY AGAIN"
+	play_again.custom_minimum_size = Vector2(260, 64)
+	play_again.add_theme_font_size_override("font_size", 28)
+	play_again.pressed.connect(_on_stats_play_again)
+	hbox.add_child(play_again)
+
+	var change_setup = Button.new()
+	change_setup.text = "CHANGE ANIMAL / DIFFICULTY"
+	change_setup.custom_minimum_size = Vector2(420, 64)
+	change_setup.add_theme_font_size_override("font_size", 24)
+	change_setup.pressed.connect(_on_stats_change_setup)
+	hbox.add_child(change_setup)
+
+	stats_overlay.hide()
+
+func _show_stats_overlay():
+	"""Populate and slide in the stats overlay."""
+	if not is_instance_valid(stats_overlay):
+		return
+
+	var final_score: int = GameManager.get_current_score()
+	var distance: int = int(GameManager.get_distance_traveled()) if GameManager.has_method("get_distance_traveled") else int(GameManager.distance_traveled)
+	var dodged: int = GameManager.obstacles_dodged
+	var best_combo: int = GameManager.combo_peak
+	var multiplier: float = GameManager.get_score_multiplier()
+	var difficulty_name: String = GameManager.DifficultyPreset.keys()[GameManager.difficulty_preset]
+
+	var near_misses: int = 0
+	var rockets_fired: int = 0
+	if rocket_manager and rocket_manager.has_method("get_performance_stats"):
+		var s: Dictionary = rocket_manager.get_performance_stats()
+		near_misses = int(s.get("near_misses", 0))
+		rockets_fired = int(s.get("rockets_fired", 0))
+
+	# New record compare: GameManager updates high_score on end_game, so compare to session peak before this run
+	var is_new_record: bool = final_score > 0 and final_score >= GameManager.high_score
+	if is_new_record:
+		stats_record_label.text = "★ NEW HIGH SCORE ★"
+		stats_record_label.modulate = Color(1.0, 0.95, 0.3, 1.0)
+		var flash = create_tween()
+		flash.set_loops(3)
+		flash.tween_property(stats_record_label, "modulate", Color(1.0, 1.0, 0.9, 0.4), 0.25)
+		flash.tween_property(stats_record_label, "modulate", Color(1.0, 0.95, 0.3, 1.0), 0.25)
+	else:
+		stats_record_label.text = "High score: %d" % GameManager.high_score
+		stats_record_label.modulate = Color(0.7, 0.7, 0.7)
+
+	stats_body.text = "\n".join([
+		"Distance:        %d m" % distance,
+		"Final score:     %d  (difficulty %s × %.2f)" % [final_score, difficulty_name, multiplier],
+		"Obstacles dodged: %d" % dodged,
+		"Near-misses:     %d   (of %d rockets)" % [near_misses, rockets_fired],
+		"Best combo:      x%d" % best_combo,
+	])
+
+	stats_overlay.modulate = Color(1, 1, 1, 0)
+	stats_overlay.show()
+	var t = create_tween()
+	t.tween_property(stats_overlay, "modulate", Color(1, 1, 1, 1), 0.35)
+
+func _on_stats_play_again():
+	"""Immediately restart the run with current animal/difficulty."""
+	if is_instance_valid(stats_overlay):
+		stats_overlay.hide()
+	camera_follow_speed = 2.0
+	GameManager.start_new_game()
+	if sugar_glider:
+		sugar_glider.apply_animal_profile()
+		sugar_glider.global_position = Vector2(200, 400)
+
+func _on_stats_change_setup():
+	"""Go back to the animal + difficulty selection flow."""
+	if is_instance_valid(stats_overlay):
+		stats_overlay.hide()
+	restart_game()
 
 func add_screen_shake(duration: float, strength: float):
 	"""Add screen shake effect on collision"""

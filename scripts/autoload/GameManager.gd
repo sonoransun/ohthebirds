@@ -7,6 +7,8 @@ signal distance_updated(distance: float)
 signal difficulty_changed(new_level: float)
 signal difficulty_preset_changed(preset: int)
 signal animal_selected(animal_type: int)
+signal combo_changed(combo_count: int, multiplier: float)
+signal milestone_reached(distance: int, bonus: int)
 
 enum GameState {
 	MENU,
@@ -38,6 +40,20 @@ var current_score: int = 0
 var distance_traveled: float = 0.0
 var high_score: int = 0
 var games_played: int = 0
+
+# Combo meter — chains of obstacle passes grant a score multiplier
+const COMBO_WINDOW: float = 3.0
+const COMBO_CAP: int = 5
+var combo_count: int = 0
+var combo_timer: float = 0.0
+var combo_peak: int = 0
+
+# Session stat counters (for game-over summary screen)
+var obstacles_dodged: int = 0
+
+# Distance milestones
+const MILESTONES: Array[int] = [1000, 2500, 5000, 10000, 20000]
+var _milestone_idx: int = 0
 
 # Difficulty scaling
 var base_difficulty: float = 1.0
@@ -102,7 +118,7 @@ func _init_difficulty_configs():
 			"energy_drain_multiplier": 1.3,
 			"rocket_base_difficulty": 1.5,
 			"warning_time_multiplier": 0.6,
-			"score_multiplier": 1.5
+			"score_multiplier": 1.75
 		},
 		# EXTREME
 		{
@@ -233,6 +249,14 @@ func start_new_game() -> void:
 	is_game_active = true
 	games_played += 1
 
+	# Reset per-session counters
+	combo_count = 0
+	combo_timer = 0.0
+	combo_peak = 0
+	obstacles_dodged = 0
+	_milestone_idx = 0
+	emit_signal("combo_changed", 0, 1.0)
+
 	change_state(GameState.PLAYING)
 
 	emit_signal("score_updated", current_score)
@@ -340,6 +364,41 @@ func update_game_progression(delta: float) -> void:
 	if new_difficulty != current_difficulty:
 		current_difficulty = new_difficulty
 		emit_signal("difficulty_changed", current_difficulty)
+
+	# Combo decay
+	if combo_count > 0:
+		combo_timer -= delta
+		if combo_timer <= 0.0:
+			reset_combo()
+
+	# Distance milestones — fire each one exactly once per run, in ascending order
+	while _milestone_idx < MILESTONES.size() and int(distance_traveled) >= MILESTONES[_milestone_idx]:
+		var m: int = MILESTONES[_milestone_idx]
+		var bonus: int = 500 * (_milestone_idx + 1)
+		add_score(bonus)
+		emit_signal("milestone_reached", m, bonus)
+		_milestone_idx += 1
+
+func combo_multiplier() -> float:
+	"""Current combo multiplier — 1.0× baseline, climbing to 2.0× at COMBO_CAP."""
+	return 1.0 + float(min(combo_count, COMBO_CAP)) * 0.2
+
+func register_obstacle_pass(base_points: int = 2) -> void:
+	"""Called when the player cleanly passes an obstacle — extends combo and scores."""
+	combo_count += 1
+	combo_timer = COMBO_WINDOW
+	combo_peak = max(combo_peak, combo_count)
+	obstacles_dodged += 1
+	add_score(int(base_points * combo_multiplier()))
+	emit_signal("combo_changed", combo_count, combo_multiplier())
+
+func reset_combo() -> void:
+	"""Reset the combo (called on collision or timeout)."""
+	if combo_count == 0:
+		return
+	combo_count = 0
+	combo_timer = 0.0
+	emit_signal("combo_changed", 0, 1.0)
 
 func get_game_data() -> Dictionary:
 	"""Get current game data for saving"""

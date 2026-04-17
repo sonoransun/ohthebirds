@@ -272,6 +272,8 @@ func configure_launcher_for_difficulty(launcher: RocketLauncher, difficulty: flo
 	# Reduce warning times for higher difficulty, then apply preset multiplier
 	launcher.warning_time *= (2.0 - clamp(difficulty / 3.0, 0.0, 0.7))
 	launcher.warning_time *= GameManager.get_warning_time_multiplier()
+	# Floor: ensure players always get a meaningful reaction window, even on EXTREME.
+	launcher.warning_time = max(launcher.warning_time, 0.5)
 
 	# Increase detection range
 	launcher.detection_range *= (1.0 + clamp(difficulty / 4.0, 0.0, 0.5))

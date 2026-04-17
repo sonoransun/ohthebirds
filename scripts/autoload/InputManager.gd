@@ -11,7 +11,7 @@ var _is_input_active: bool = false
 var raw_input_direction: Vector2 = Vector2.ZERO
 
 # Input smoothing and filtering
-var input_smoothing: float = 0.05
+var input_smoothing: float = 0.0
 var input_deadzone: float = 0.1
 var input_sensitivity: float = 1.0
 

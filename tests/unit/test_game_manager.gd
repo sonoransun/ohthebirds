@@ -188,8 +188,8 @@ func test_return_to_menu_state_is_menu() -> void:
 
 func test_score_multiplier_hard_preset() -> void:
 	GameManager.set_difficulty_preset(GameManager.DifficultyPreset.HARD)
-	assert_approx_equal(GameManager.get_score_multiplier(), 1.5, 0.001,
-		"HARD preset score multiplier should be 1.5")
+	assert_approx_equal(GameManager.get_score_multiplier(), 1.75, 0.001,
+		"HARD preset score multiplier should be 1.75")
 
 func test_add_negative_score_clamps_to_zero() -> void:
 	GameManager.start_new_game()

@@ -181,7 +181,9 @@ func test_full_game_state_cycle() -> void:
 	# End the game
 	GameManager.end_game()
 	assert_true(GameManager.is_game_over(), "should be in GAME_OVER state")
-	assert_equal(GameManager.high_score, 150, "high score should update after game over")
+	# Crossing the 1000m milestone grants a +500 bonus during update_game_progression
+	# (distance=1200 passes the first milestone once), so the final score becomes 150 + 500 = 650.
+	assert_equal(GameManager.high_score, 650, "high score should include milestone bonus after game over")
 
 	# Cleanup
 	GameManager.return_to_menu()

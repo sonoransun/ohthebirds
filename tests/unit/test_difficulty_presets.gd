@@ -20,7 +20,7 @@ const EXPECTED: Dictionary = {
 	# NORMAL: baseline
 	1: {"scroll": 1.00, "drain": 1.00, "rocket": 1.00, "warning": 1.00, "score": 1.00},
 	# HARD: faster, more drain, more rockets, shorter warnings, higher score
-	2: {"scroll": 1.20, "drain": 1.30, "rocket": 1.50, "warning": 0.60, "score": 1.50},
+	2: {"scroll": 1.20, "drain": 1.30, "rocket": 1.50, "warning": 0.60, "score": 1.75},
 	# EXTREME: max speed, heavy drain, maximum rockets, almost no warning, big score
 	3: {"scroll": 1.50, "drain": 1.70, "rocket": 2.00, "warning": 0.30, "score": 2.50},
 }

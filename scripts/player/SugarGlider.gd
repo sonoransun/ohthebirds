@@ -60,6 +60,7 @@ var max_tilt_angle: float = 30.0
 var is_stunned: bool = false
 var stun_timer: float = 0.0
 var collision_particles_active: bool = false
+var _last_input_dir: Vector2 = Vector2.ZERO
 
 # Node references (will be set up when scene is loaded)
 var animated_sprite: AnimatedSprite2D
@@ -124,6 +125,12 @@ func setup_node_references():
 
 	if animated_sprite:
 		animated_sprite.play("idle_glide")
+
+	# Give the particle nodes soft radial-gradient textures so they're actually visible
+	if glide_trail and not glide_trail.texture:
+		glide_trail.texture = _make_radial_dot(8, Color(0.6, 0.9, 1.0, 1.0))
+	if collision_sparks and not collision_sparks.texture:
+		collision_sparks.texture = _make_radial_dot(6, Color(1.0, 0.6, 0.2, 1.0))
 
 	# Evasion glow light (off by default, enabled during evasion mode)
 	glider_light = PointLight2D.new()
@@ -194,15 +201,15 @@ func apply_gliding_forces(delta):
 	var lift_force = velocity.x * GLIDE_LIFT_COEFFICIENT
 	velocity.y -= lift_force * delta
 
-	# Apply glide resistance (maintains momentum better)
-	velocity *= GLIDE_RESISTANCE
+	# Apply glide resistance (maintains momentum better, frame-rate independent)
+	velocity *= pow(GLIDE_RESISTANCE, delta * 60.0)
 
 	# Ensure we don't gain infinite speed
 	velocity.x = min(velocity.x, MAX_GLIDE_SPEED)
 
 func apply_free_fall_resistance(delta):
-	"""Apply air resistance during free fall"""
-	velocity *= AIR_RESISTANCE
+	"""Apply air resistance during free fall (frame-rate independent)"""
+	velocity *= pow(AIR_RESISTANCE, delta * 60.0)
 
 
 func apply_environmental_effects(delta):
@@ -288,9 +295,9 @@ func handle_stun_state(delta):
 		is_stunned = false
 		print("Recovered from stun")
 
-	# Apply basic physics during stun
+	# Apply basic physics during stun (frame-rate independent resistance)
 	velocity.y += GRAVITY * delta
-	velocity *= AIR_RESISTANCE
+	velocity *= pow(AIR_RESISTANCE, delta * 60.0)
 	move_and_slide()
 
 func update_visual_state(delta):
@@ -366,18 +373,21 @@ func update_visual_tilt(delta):
 
 	visual_tilt = lerp(visual_tilt, target_tilt, tilt_speed * delta)
 
+	# Banking: add a small tilt from vertical velocity so climbs/dives read visually
+	var bank: float = clamp(velocity.y / MAX_FALL_SPEED, -1.0, 1.0) * 15.0
+
 	# Apply tilt to visual representation
 	if animated_sprite:
-		animated_sprite.rotation_degrees = visual_tilt
+		animated_sprite.rotation_degrees = visual_tilt + bank
 
 func update_particle_effects():
 	"""Update particle effects based on state"""
 	if not particle_effects:
 		return
 
-	# Glide trail effect
+	# Glide trail effect — emit when cruising OR holding input, so quick flicks still show a trail
 	if glide_trail:
-		glide_trail.emitting = is_gliding() and velocity.length() > 200.0
+		glide_trail.emitting = velocity.length() > 120.0 or is_input_active
 
 	# Collision sparks
 	if collision_sparks:
@@ -386,8 +396,43 @@ func update_particle_effects():
 			collision_particles_active = false
 
 func create_collision_particles():
-	"""Create particle effect for collision"""
+	"""Create particle effect for collision, plus hit flash + squash"""
 	collision_particles_active = true
+	_play_hit_flash()
+
+func _play_reversal_squash():
+	"""Quick scale pulse when input direction reverses."""
+	if not animated_sprite:
+		return
+	var base_scale: Vector2 = animated_sprite.scale
+	var t := create_tween()
+	t.tween_property(animated_sprite, "scale", base_scale * Vector2(1.15, 0.85), 0.06)
+	t.tween_property(animated_sprite, "scale", base_scale, 0.12)
+
+func _play_hit_flash():
+	"""White flash + squash when the glider collides."""
+	if not animated_sprite:
+		return
+	var base_scale: Vector2 = animated_sprite.scale
+	var t := create_tween()
+	t.tween_property(animated_sprite, "modulate", Color(3, 3, 3, 1), 0.05)
+	t.tween_property(animated_sprite, "modulate", Color.WHITE, 0.15)
+	var s := create_tween()
+	s.tween_property(animated_sprite, "scale", base_scale * Vector2(1.2, 0.7), 0.08)
+	s.tween_property(animated_sprite, "scale", base_scale, 0.2)
+
+static func _make_radial_dot(radius: int, col: Color) -> ImageTexture:
+	"""Build a soft radial-gradient dot texture for particle systems."""
+	var size := radius * 2
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	for y in size:
+		for x in size:
+			var d: float = Vector2(x - radius, y - radius).length() / float(radius)
+			if d <= 1.0:
+				img.set_pixel(x, y, Color(col.r, col.g, col.b, (1.0 - d) * col.a))
+			else:
+				img.set_pixel(x, y, Color(0, 0, 0, 0))
+	return ImageTexture.create_from_image(img)
 
 # Environmental effect setters (called by environment manager)
 func set_wind_effect(wind_velocity: Vector2):
@@ -490,12 +535,21 @@ func apply_player_input(delta):
 		# Slightly different physics during evasion
 		velocity *= 1.05  # Momentum conservation bonus
 
-	# Reduce force when energy is low
-	if current_energy < LOW_ENERGY_THRESHOLD:
-		effective_input_force *= 0.5
+	# Smooth low-energy force curve: 0.5× at empty, 1.0× above threshold
+	effective_input_force *= lerp(0.5, 1.0, smoothstep(0.0, LOW_ENERGY_THRESHOLD, current_energy))
+
+	# Direction-reversal snap kick: one-frame impulse when input flips across the origin
+	var _reversed := _last_input_dir.dot(input_direction) < 0.0 and input_direction.length_squared() > 0.0
+	var _snap := 2.5 if _reversed else 1.0
 
 	# Apply input in desired direction
-	velocity += input_direction * effective_input_force * delta
+	velocity += input_direction * effective_input_force * delta * _snap
+
+	# Trigger juice on direction reversal (visual squash + stretch)
+	if _reversed:
+		_play_reversal_squash()
+
+	_last_input_dir = input_direction
 
 	# Enhanced speed limits during evasion
 	var max_speed_x = MAX_GLIDE_SPEED * (evasion_speed_boost if evasion_mode else 1.0)

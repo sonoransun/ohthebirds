@@ -104,12 +104,24 @@ func _physics_process(delta):
 	check_proximity_to_player()
 
 func setup_visual_components():
-	"""Create visual components for the rocket"""
-	# Main rocket sprite (simple colored rectangle for now)
+	"""Create visual components for the rocket, with per-type color + size."""
+	# Per-type palette: color and body dimensions so each rocket reads distinctly at a glance
+	var palette := {
+		RocketType.BASIC:       {"color": Color.ORANGE_RED, "w": 16, "h": 4},
+		RocketType.FAST:        {"color": Color(0.9, 0.95, 1.0, 1.0), "w": 14, "h": 3},
+		RocketType.TRACKING:    {"color": Color(1.0, 0.15, 0.15, 1.0), "w": 16, "h": 4},
+		RocketType.CLUSTER:     {"color": Color(0.75, 0.3, 0.95, 1.0), "w": 14, "h": 6},
+		RocketType.EXPLOSIVE:   {"color": Color(1.0, 0.95, 0.2, 1.0), "w": 18, "h": 6},
+		RocketType.SMOKE_TRAIL: {"color": Color(0.55, 0.55, 0.6, 1.0), "w": 16, "h": 4},
+		RocketType.PENETRATOR:  {"color": Color(0.3, 0.95, 1.0, 1.0), "w": 18, "h": 4},
+		RocketType.SPIRAL:      {"color": Color(1.0, 0.3, 0.85, 1.0), "w": 16, "h": 4},
+	}
+	var cfg: Dictionary = palette.get(rocket_type, {"color": Color.ORANGE_RED, "w": 16, "h": 4})
+
 	rocket_sprite = Sprite2D.new()
 	var texture = ImageTexture.new()
-	var image = Image.create(16, 4, false, Image.FORMAT_RGBA8)
-	image.fill(Color.ORANGE_RED)
+	var image = Image.create(cfg.w, cfg.h, false, Image.FORMAT_RGBA8)
+	image.fill(cfg.color)
 	texture.set_image(image)
 	rocket_sprite.texture = texture
 	rocket_sprite.rotation = PI / 2.0  # Point upward initially
