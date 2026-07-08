@@ -4,6 +4,10 @@
 
 <h1 align="center">Sugar Glider Adventure</h1>
 
+<a href="https://funflying.org/"><b>Test your flying skills at FunFlying.org!</b></a>
+<br />
+<br />
+
 <p align="center">
   A 2D auto-scrolling survival game built with Godot 4.<br>
   Guide a sugar glider through volcanic terrain, dodge rockets, manage energy, and survive as long as possible.
